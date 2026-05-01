@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\HyperQ.Env\HyperQ.Env.csproj" />
+    <ProjectReference Include="..\..\src\HyperQ.Learners\HyperQ.Learners.csproj" />
+    <ProjectReference Include="..\..\src\HyperQ.MACE\HyperQ.MACE.csproj" />
+    <ProjectReference Include="..\..\src\HyperQ.MultiHead\HyperQ.MultiHead.csproj" />
+    <ProjectReference Include="..\..\src\HyperQ.Training\HyperQ.Training.csproj" />
+    <ProjectReference Include="..\..\src\HyperQ.Util\HyperQ.Util.csproj" />
+  </ItemGroup>
+</Project>

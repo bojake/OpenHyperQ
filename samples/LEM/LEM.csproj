@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\HyperQ.Env\HyperQ.Env.csproj" />
+    <ProjectReference Include="..\..\src\HyperQ.Learners\HyperQ.Learners.csproj" />
+    <ProjectReference Include="..\..\src\HyperQ.MACE\HyperQ.MACE.csproj" />
+    <ProjectReference Include="..\..\src\HyperQ.Training\HyperQ.Training.csproj" />
+    <ProjectReference Include="..\..\src\HyperQ.Util\HyperQ.Util.csproj" />
+  </ItemGroup>
+</Project>

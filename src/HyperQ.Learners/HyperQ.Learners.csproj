@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Remove="QAction.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HyperQ.Env\HyperQ.Env.csproj" />
+    <ProjectReference Include="..\HyperQ.Util\HyperQ.Util.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,11 @@
+bin/
+obj/
+TestResults/
+*.user
+*.suo
+*.log
+*.csv
+frames.txt
+lem-frames.txt
+wumpus-frames.txt
+matrix-*.csv
