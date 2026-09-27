@@ -384,6 +384,11 @@ namespace HyperQ.MACE.Training
                 }
                 last_sa = new Tuple<T, QAction[]>(s, action);
                 action = aprime;
+                // Give the next step its own array. Reusing 'aprime' would alias 'action', so the
+                // next SelectAction would overwrite the action that was actually taken before the
+                // SARSA update runs, and every remembered (s,a) and Dyna entry would share the same
+                // mutating array.
+                aprime = new QAction[_Minds.Count];
                 s = sprime;
                 iter++;
                 if (WarmupEnabled)
@@ -457,12 +462,13 @@ namespace HyperQ.MACE.Training
             T s = env.Discretize();
             int iter = 0;
             env.Render();
-            QAction[] a = new QAction[_Minds.Count];
             while (!done)
             {
                 if (!WarmupEnabled)
                     env.Metrics.StartAction();
                 OnStepStart?.Invoke();
+                // A fresh array per step: the replay memory and the Dyna model keep a reference to it.
+                QAction[] a = new QAction[_Minds.Count];
                 for (int i = 0; i < _Minds.Count; i++)
                 {
                     a[i] = _Minds[i].ActionSelector.SelectAction(_Minds[i].Mind, s, hp.Epsilon);

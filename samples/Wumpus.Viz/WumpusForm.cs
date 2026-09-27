@@ -8,7 +8,6 @@ using HyperQ.Learners;
 using HyperQ.Util;
 using HyperQ.Training;
 using System.Threading.Tasks;
-using System.Reflection;
 
 namespace WumpusViz
 {
@@ -45,6 +44,21 @@ namespace WumpusViz
         private int _WaitOnStep = 25;
         private volatile bool _isClosing;
         private Task _runTask;
+        private bool _running;
+
+        /// <summary>
+        /// What the UI needs to draw one training step. Frames are captured on the training thread, which is
+        /// the only thread allowed to touch the world and the learner; the UI thread only draws these copies.
+        /// </summary>
+        private sealed class StepFrame
+        {
+            public double TotalReward;
+            public double Epsilon;
+            public double Alpha;
+            public CaveItem[,] Map;
+            public Tuple<int, int> Player;
+            public Tuple<int, int> Dimensions;
+        }
 
         public WumpusForm()
         {
@@ -74,7 +88,7 @@ namespace WumpusViz
             _runTypeBox = new ComboBox { Dock = DockStyle.Top };
             _runTypeBox.Items.AddRange(new object[]{"q","qq","q+hyper","qq+hyper","q+layered","qq+layered"});
             _runTypeBox.SelectedIndex = 0;
-            _runTypeBox.SelectedIndexChanged += (s,e)=>SetupRunner();
+            _runTypeBox.SelectedIndexChanged += (s,e)=> { if (!_running) SetupRunner(); };
 
             _optionsButton = new Button { Text = "Options", Dock = DockStyle.Top };
             _optionsButton.Click += (s,e)=>{
@@ -83,23 +97,29 @@ namespace WumpusViz
                     if(f.ShowDialog()==DialogResult.OK)
                     {
                         _options = f.Options;
-                        SetupRunner();
+                        if (!_running) SetupRunner();
                     }
                 }
             };
 
-            _runButton = new Button { Text = "Run", Dock = DockStyle.Top };
+            _runButton = new Button { Text = "Start", Dock = DockStyle.Top };
             _runButton.Click += (s, e) => {
-                if (_runButton.Text == "Stop")
+                if (_running)
                 {
-                    _runner.Stop();
-                    _runButton.Text = "Start";
+                    // The trainer stops at the end of the current episode and then evaluates; the button is
+                    // enabled again when the run reports completion.
+                    _runner?.Stop();
+                    _runButton.Text = "Stopping...";
+                    _runButton.Enabled = false;
                 }
                 else
                 {
-                    _runButton.Text = "Stop";
                     SetupRunner();
-                    _runTask = Task.Run(() => _runner.Run(_options));
+                    IWumpusRunner runner = _runner;
+                    ProgramArgs options = _options;
+                    _running = true;
+                    UpdateControls();
+                    _runTask = Task.Run(() => RunTraining(runner, options));
                 }
             };
 
@@ -306,19 +326,92 @@ namespace WumpusViz
             }
 
             InitializeEnv();
-            _runner.OnStepEnd += () => { System.Threading.Thread.Sleep(_WaitOnStep); RunOnUiThread(Step); };
-            _runner.OnEpisodeStart += () => RunOnUiThread(() => { _lastReward = 0; ResetUIForEpisode(); });
-            _runner.OnTelemetry += (arr, act, rnd) => RunOnUiThread(() => OnTelemetry(arr, act, rnd));
-            _runner.OnRunComplete += _runner_OnRunComplete;
+            IWumpusRunner runner = _runner;
+            // These events fire on the training thread. The world and the learner are read right here, on
+            // that thread, and only copies are handed to the UI thread: reading them from the UI thread while
+            // training mutates them is a data race (the learner tables are plain dictionaries).
+            runner.OnStepEnd += () =>
+            {
+                System.Threading.Thread.Sleep(_WaitOnStep);
+                StepFrame frame = CaptureFrame(runner);
+                if (frame != null)
+                    RunOnUiThread(() => Step(runner, frame));
+            };
+            runner.OnEpisodeStart += () => RunOnUiThread(() =>
+            {
+                if (runner != _runner) return;
+                _lastReward = 0;
+                ResetUIForEpisode();
+            });
+            runner.OnTelemetry += (arr, act, rnd) =>
+            {
+                WumpusBaseGameEnv world = runner.World;
+                object state = world != null ? GetCurrentState(world) : null;
+                Tuple<int, int> player = world?.PlayerLocation;
+                int cols = world != null ? world.Dimensions.Item2 : 0;
+                RunOnUiThread(() => OnTelemetry(runner, arr, act, rnd, state, player, cols));
+            };
+            runner.OnRunComplete += () => RunOnUiThread(() => RunCompleted(runner));
             _totalSteps = 0;
         }
 
-        private void _runner_OnRunComplete()
+        /// <summary>
+        /// Enables the configuration controls only while no run is active: replacing the runner underneath a
+        /// running trainer would leave the old run training unobserved.
+        /// </summary>
+        private void UpdateControls()
         {
-            RunOnUiThread(() =>
+            _optionsButton.Enabled = !_running;
+            _runTypeBox.Enabled = !_running;
+            _selectorBox.Enabled = !_running;
+            _runButton.Enabled = true;
+            _runButton.Text = _running ? "Stop" : "Start";
+        }
+
+        /// <summary>
+        /// Runs the training loop on the calling (background) thread and reports a failure on the UI thread
+        /// instead of losing it inside an unobserved task.
+        /// </summary>
+        private void RunTraining(IWumpusRunner runner, ProgramArgs options)
+        {
+            try
             {
-                _runButton.Text = "Start";
-            });
+                runner.Run(options);
+            }
+            catch (Exception ex)
+            {
+                RunOnUiThread(() =>
+                {
+                    RunCompleted(runner);
+                    MessageBox.Show(this, ex.ToString(), "Training failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                });
+            }
+        }
+
+        private void RunCompleted(IWumpusRunner runner)
+        {
+            if (runner != _runner) return;
+            _running = false;
+            UpdateControls();
+        }
+
+        /// <summary>
+        /// Captures the world state for one step. Runs on the training thread.
+        /// </summary>
+        private StepFrame CaptureFrame(IWumpusRunner runner)
+        {
+            WumpusBaseGameEnv world = runner.World;
+            if (world == null) return null;
+            HyperParams hp = runner.Hypers;
+            return new StepFrame
+            {
+                TotalReward = world.Metrics != null ? (double)world.Metrics.TotalReward : 0.0,
+                Epsilon = hp != null ? hp.Epsilon.Value : 0.0,
+                Alpha = hp != null ? hp.Alpha.Value : 0.0,
+                Map = world.GetCaveSnapshot(),
+                Player = world.PlayerLocation,
+                Dimensions = world.Dimensions
+            };
         }
 
         private object GetCurrentState(WumpusBaseGameEnv world)
@@ -330,41 +423,20 @@ namespace WumpusViz
             return null;
         }
 
-        private void OnTelemetry(double[] arr, QAction action, bool random)
+        /// <summary>
+        /// Records one action selection. Runs on the UI thread with values captured on the training thread:
+        /// <paramref name="arr"/> is the learner's action array for <paramref name="state"/>, as computed by the
+        /// runner when the action was chosen.
+        /// </summary>
+        private void OnTelemetry(IWumpusRunner runner, double[] arr, QAction action, bool random, object state, Tuple<int, int> loc, int cols)
         {
-            var world = _runner.World;
-            var learner = _runner.TheLearner;
-            if(world != null && learner != null)
+            if (runner != _runner || arr == null) return;
+            if (state != null)
             {
-                IEntropyTracer tracer =  _runner.TheSelector as IEntropyTracer;
-                if (tracer != null)
-                {
-                    double[] p = tracer.Probabilities;
-                    double ent = tracer.CurrentEntropy;
-                }
-                object state = GetCurrentState(world);
-                if (state != null)
-                {
-                    try
-                    {
-                        MethodInfo mi = learner.GetType().GetMethod("GetActionArray");
-                        if (mi != null)
-                        {
-                            double[] vals = (double[])mi.Invoke(learner, new object[] { state });
-                            _episodeStates[state] = (double[])vals.Clone();
-                            arr = vals;
-                        }
-                    }
-                    catch (TargetInvocationException)
-                    {
-                        // ignore failures from reflection call
-                    }
-                }
+                _episodeStates[state] = (double[])arr.Clone();
             }
-            if(world != null)
+            if (loc != null)
             {
-                var loc = world.PlayerLocation;
-                int cols = world.Dimensions.Item2;
                 int s = loc.Item1 * cols + loc.Item2;
                 if(!_actionCounts.TryGetValue(s, out var cnt))
                 {
@@ -384,23 +456,21 @@ namespace WumpusViz
             DrawActionHistory();
         }
 
-        private void Step()
+        private void Step(IWumpusRunner runner, StepFrame frame)
         {
+            if (runner != _runner) return;
             _totalSteps += 1;
-            var world = _runner.World;
-            var hp = _runner.Hypers;
-            if (world == null) return;
-            double reward = world.Metrics.TotalReward - _lastReward;
-            _lastReward = world.Metrics.TotalReward;
+            double reward = frame.TotalReward - _lastReward;
+            _lastReward = frame.TotalReward;
             _rewardAverage.Add(reward);
             _rewardHistory.Enqueue(_rewardAverage.Value);
             if(_rewardHistory.Count>50) _rewardHistory.Dequeue();
-            _epsilonHistory.Enqueue(hp.Epsilon.Value);
+            _epsilonHistory.Enqueue(frame.Epsilon);
             if(_epsilonHistory.Count>50) _epsilonHistory.Dequeue();
-            _alphaHistory.Enqueue(hp.Alpha.Value);
+            _alphaHistory.Enqueue(frame.Alpha);
             if(_alphaHistory.Count>50) _alphaHistory.Dequeue();
-            DrawGrid();
-            DrawActionLikelihoodGrid();
+            DrawGrid(frame.Map, frame.Player);
+            DrawActionLikelihoodGrid(frame.Dimensions);
             DrawQHeatMap();
             DrawRewardGraph();
             DrawParamGraph();
@@ -427,15 +497,13 @@ namespace WumpusViz
             _lastReward = 0.0;
             DrawRewardGraph();
             DrawParamGraph();
-            DrawActionLikelihoodGrid();
+            // Only called between runs, so the world is not being trained on while it is read here.
+            DrawActionLikelihoodGrid(_runner?.World?.Dimensions);
         }
 
-        private void DrawGrid()
+        private void DrawGrid(CaveItem[,] map, Tuple<int, int> loc)
         {
-            var world = _runner.World;
-            if (world == null) return;
-            CaveItem[,] map = world.GetCaveSnapshot();
-            if(map==null) return;
+            if (map == null || loc == null) return;
             int rows = map.GetLength(0);
             int cols = map.GetLength(1);
             Bitmap bmp = new Bitmap(_gridBox.Width,_gridBox.Height);
@@ -473,7 +541,6 @@ namespace WumpusViz
                         }
                     }
                 }
-                var loc = world.PlayerLocation;
                 using(Brush b = new SolidBrush(Color.Red))
                 {
                     g.FillRectangle(b,loc.Item2*cw,loc.Item1*ch,cw,ch);
@@ -658,12 +725,11 @@ namespace WumpusViz
             return bmp;
         }
 
-        private void DrawActionLikelihoodGrid()
+        private void DrawActionLikelihoodGrid(Tuple<int, int> dimensions)
         {
-            var world = _runner.World;
-            if (world == null) return;
-            int rows = world.Dimensions.Item1;
-            int cols = world.Dimensions.Item2;
+            if (dimensions == null) return;
+            int rows = dimensions.Item1;
+            int cols = dimensions.Item2;
             Bitmap bmp = new Bitmap(_probBox.Width, _probBox.Height);
             using(Graphics g = Graphics.FromImage(bmp))
             {

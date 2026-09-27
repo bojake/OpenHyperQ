@@ -100,6 +100,8 @@ Use it when:
 
 Layered learners are best treated as advanced APIs until more public examples are added.
 
+For inspection, `KnownStates()` lists the complete states the learner has seen, `AsMatrix` returns one row per such state and one column per action index (the finest layer that has learned an action supplies its value, coarser layers fill in the rest), and `KnownActionValues(state)`, available on every `IHyperQ<T>`, enumerates the learned `(action index, value)` pairs without materializing defaults. None of these modify the learner.
+
 ## Generator Helpers
 
 `SingleQGenerator<T>` and `DoubleQGenerator<T>` create learners for layered configurations. They are mainly useful with `LayeredHyperQ<T>` and sample runner code.

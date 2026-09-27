@@ -43,6 +43,13 @@ namespace HyperQ.Learners
         /// <returns></returns>
         double[] GetKnownActionArray(QState<T> stateKey);
         /// <summary>
+        /// Enumerates the (action index, Q value) pairs that have been learned for the given state, keyed by the
+        /// action-space index (see <see cref="QActionSpace{T}.ToIndex"/>). Unlike <see cref="Q{T}.GetActionArray"/>
+        /// this neither fills in defaults for actions that were never tried nor modifies the learner.
+        /// </summary>
+        /// <param name="stateKey">The state to query</param>
+        IEnumerable<KeyValuePair<uint, double>> KnownActionValues(QState<T> stateKey);
+        /// <summary>
         /// Returns true if the index repository must be linked with other instances, such as with
         /// a Double-Q implementation where the repositories must be linked for index coherence to
         /// be preserved.

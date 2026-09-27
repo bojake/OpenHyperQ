@@ -86,19 +86,18 @@ namespace HyperQ.Util
         {
             get
             {
+                // The number of keys mapped anywhere in this hyper path (see MemoryBackedHyperMapper).
                 uint count = 0;
-                if(_Sub != null)
+                if (_Sub != null)
+                {
                     foreach (FileBackedHyperMapper<T> h in _Sub.Values)
                     {
-                        if (count == 0)
-                            count = 1;
-                        count *= h.MappingCount;
+                        count += h.MappingCount;
                     }
+                }
                 if (_Final != null)
                 {
-                    if (count == 0)
-                        count = 1;
-                    count *= _Final.MappingCount;
+                    count += _Final.MappingCount;
                 }
                 return count;
             }

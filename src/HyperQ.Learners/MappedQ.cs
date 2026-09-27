@@ -81,63 +81,57 @@ namespace HyperQ.Learners
         }
         private double[,] makeQ()
         {
-            double[,] qq = new double[_data.Count + _StateIndexStart, ActionSpace.NumberOfKnownActions + _ActionIndexStart];
+            // Snapshot the row and action counts once. Visualizers read this matrix from another thread
+            // while training keeps adding states and actions; re-reading the live counts inside the loops
+            // would index past the allocated matrix and throw IndexOutOfRangeException.
+            List<QRow> data = _data;
+            List<QRow> overlap = _overlapData;
+            int nrows = data != null ? data.Count : 0;
+            uint known = ActionSpace.NumberOfKnownActions;
+            double[,] qq = new double[nrows + _StateIndexStart, known + _ActionIndexStart];
             // Copy the original Q
-            if (_StateIndexStart > 0)
+            if (_StateIndexStart > 0 && _Q != null)
             {
-                _Q.CopyTo(qq, 0);
+                int qrows = Math.Min(_Q.GetLength(0), (int)_StateIndexStart);
+                int qcols = Math.Min(_Q.GetLength(1), qq.GetLength(1));
+                for (int j = 0; j < qrows; j++)
+                {
+                    for (int i = 0; i < qcols; i++)
+                    {
+                        qq[j, i] = _Q[j, i];
+                    }
+                }
             }
-            for (uint j = 0; j < _data.Count; j++)
+            for (int j = 0; j < nrows; j++)
             {
-                for (uint i = 0; i < ActionSpace.NumberOfKnownActions; i++)
+                QRow row = data[j];
+                for (uint i = 0; i < known; i++)
                 {
                     // The action rows may not have all of the mapped actions. When there is no action for that
                     // state (row), use the default value action.
-                    QRow row = _data[(int)j];
-                    double v = 0.0;
-                    if (!row.ContainsKey(i))
+                    double v;
+                    if (row == null || !row.TryGetValue(i, out v))
                     {
-                        if (DefaultValueFunc != null)
-                        {
-                            v = DefaultValueFunc();
-                        }
-                        else
-                        {
-                            v = 0.0;
-                        }
+                        v = DefaultValueFunc != null ? DefaultValueFunc() : 0.0;
                     }
-                    else
-                    {
-                        v = row[i];
-                    }
-                    qq[j+_StateIndexStart, i+_ActionIndexStart] = v;
+                    qq[j + _StateIndexStart, i + _ActionIndexStart] = v;
                 }
             }
             // Inject the overlap
-            if (_overlapData != null)
+            if (overlap != null)
             {
-                for (uint j = 0; j < _overlapData.Count; j++)
+                int orows = Math.Min(overlap.Count, (int)_StateIndexStart);
+                for (int j = 0; j < orows; j++)
                 {
-                    for (uint i = 0; i < ActionSpace.NumberOfKnownActions; i++)
+                    QRow row = overlap[j];
+                    for (uint i = 0; i < known; i++)
                     {
                         // The action rows may not have all of the mapped actions. When there is no action for that
                         // state (row), use the default value action.
-                        QRow row = _overlapData[(int)j];
-                        double v = 0.0;
-                        if (!row.ContainsKey(i))
+                        double v;
+                        if (row == null || !row.TryGetValue(i, out v))
                         {
-                            if (DefaultValueFunc != null)
-                            {
-                                v = DefaultValueFunc();
-                            }
-                            else
-                            {
-                                v = 0.0;
-                            }
-                        }
-                        else
-                        {
-                            v = row[i];
+                            v = DefaultValueFunc != null ? DefaultValueFunc() : 0.0;
                         }
                         qq[j, i + _ActionIndexStart] = v;
                     }
@@ -153,10 +147,13 @@ namespace HyperQ.Learners
         /// <returns></returns>
         public override double[] GetActionArray(T stateKey)
         {
-            double[] qq = new double[ActionSpace.NumberOfKnownActions + _ActionIndexStart];
+            // Snapshot the known action count once so the array and the loops below always agree, even
+            // when another thread is adding actions to the shared action space.
+            uint known = ActionSpace.NumberOfKnownActions;
+            double[] qq = new double[known + _ActionIndexStart];
             if (!_StateMap.Known(stateKey))
             {
-                for (int i = 0; i < ActionSpace.NumberOfKnownActions; i++)
+                for (int i = 0; i < known; i++)
                 {
                     qq[i] = DefaultValueFunc();
                 }
@@ -171,7 +168,7 @@ namespace HyperQ.Learners
                         qq[a] = _Q[ix, a];
                     if (_overlapData != null && _overlapData.Count > ix)
                     {
-                        for (uint i = 0; i < ActionSpace.NumberOfKnownActions; i++)
+                        for (uint i = 0; i < known; i++)
                         {
                             // The action rows may not have all of the mapped actions. When there is no action for that
                             // state (row), use the default value action.
@@ -200,7 +197,7 @@ namespace HyperQ.Learners
                 {
                     ix -= _StateIndexStart;
                     QRow row = _data[(int)ix];
-                    for (uint i = 0; i < ActionSpace.NumberOfKnownActions; i++)
+                    for (uint i = 0; i < known; i++)
                     {
                         // The action rows may not have all of the mapped actions. When there is no action for that
                         // state (row), use the default value action.

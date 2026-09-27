@@ -114,6 +114,17 @@ namespace HyperQ.Util
                 return _MapToIndices.Keys;
             }
         }
+
+        /// <summary>
+        /// Enumerates every (key, index) pair held by this mapper.
+        /// </summary>
+        public IEnumerable<KeyValuePair<T, uint>> Mappings
+        {
+            get
+            {
+                return _MapToIndices;
+            }
+        }
         public virtual IndexRepo Repo
         {
             get

@@ -69,28 +69,88 @@ namespace HyperQ.Util
         }
 
         /// <summary>
-        /// Returns the permutable count of states found in this hyper path
+        /// Returns the number of keys mapped anywhere in this hyper path: the keys held at this level plus the
+        /// keys held by every sub path. A learner whose states all have the same number of elements therefore
+        /// sees the number of distinct states it has mapped. (This used to multiply the level sizes, which is
+        /// not a count of anything and overflows quickly.)
         /// </summary>
-        /// <returns></returns>
         public uint MappingCount
         {
             get
             {
                 uint count = 0;
-                if(_Sub != null)
+                if (_Sub != null)
+                {
                     foreach (MemoryBackedHyperMapper<T> h in _Sub.Values)
                     {
-                        if (count == 0)
-                            count = 1;
-                        count *= h.MappingCount;
+                        count += h.MappingCount;
                     }
+                }
                 if (_Final != null)
                 {
-                    if (count == 0)
-                        count = 1;
-                    count *= _Final.MappingCount;
+                    count += _Final.MappingCount;
                 }
                 return count;
+            }
+        }
+
+        /// <summary>
+        /// Returns the number of keys mapped exactly <paramref name="depth"/> elements below this level, which
+        /// is the number of states with that many elements. Depth 1 counts the keys held at this level.
+        /// </summary>
+        public uint MappingCountAtDepth(int depth)
+        {
+            if (depth <= 0)
+            {
+                return 0;
+            }
+            if (depth == 1)
+            {
+                return _Final != null ? _Final.MappingCount : 0;
+            }
+            uint count = 0;
+            if (_Sub != null)
+            {
+                foreach (MemoryBackedHyperMapper<T> h in _Sub.Values)
+                {
+                    count += h.MappingCountAtDepth(depth - 1);
+                }
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Returns a snapshot of every mapped state with its index. Each state lists the key elements from this
+        /// level down to the mapped key, so a mapper that only ever saw n-element states yields n-element states.
+        /// </summary>
+        public List<KeyValuePair<QState<T>, uint>> Mappings()
+        {
+            List<KeyValuePair<QState<T>, uint>> result = new List<KeyValuePair<QState<T>, uint>>();
+            CollectMappings(new List<T>(), result);
+            return result;
+        }
+
+        private void CollectMappings(List<T> prefix, List<KeyValuePair<QState<T>, uint>> result)
+        {
+            IndexMapper<T> final = _Final as IndexMapper<T>;
+            if (final != null)
+            {
+                foreach (KeyValuePair<T, uint> kv in final.Mappings)
+                {
+                    T[] path = new T[prefix.Count + 1];
+                    prefix.CopyTo(path);
+                    path[prefix.Count] = kv.Key;
+                    result.Add(new KeyValuePair<QState<T>, uint>(new QState<T>(path), kv.Value));
+                }
+            }
+            if (_Sub != null)
+            {
+                foreach (KeyValuePair<T, MemoryBackedHyperMapper<T>> kv in _Sub)
+                {
+                    prefix.Add(kv.Key);
+                    kv.Value.CollectMappings(prefix, result);
+                    prefix.RemoveAt(prefix.Count - 1);
+                }
             }
         }
         public bool RemoveKey(T key)

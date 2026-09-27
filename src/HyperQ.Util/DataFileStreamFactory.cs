@@ -7,6 +7,11 @@ namespace HyperQ.Util
     /// <summary>
     /// Factory for FileStream instances for .dat files. Instances are keyed by the
     /// backing file name so multiple index mappers can share the same stream.
+    /// The factory owns the lifetime of every stream it hands out. If a
+    /// consumer disposes a shared stream the factory detects this and
+    /// re-creates it on the next <see cref="Get"/> call, so a disposed
+    /// instance can never poison the cache for the remaining consumers.
+    /// Use <see cref="DisposeAll"/> to tear every stream down.
     /// </summary>
     public static class DataFileStreamFactory
     {
@@ -20,25 +25,50 @@ namespace HyperQ.Util
         /// <returns>A shared FileStream instance.</returns>
         public static FileStream Get(string path)
         {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                throw new ArgumentException("A path is required", nameof(path));
+            }
+
             lock (_lock)
             {
-                if (_streams.TryGetValue(path, out var fs))
+                if (_streams.TryGetValue(path, out var fs) && StreamIsAlive(fs))
                 {
                     return fs;
                 }
+
                 string dir = Path.GetDirectoryName(path);
                 if (string.IsNullOrEmpty(dir))
                 {
                     dir = ".";
                 }
-                else
-                {
-                    Directory.CreateDirectory(dir);
-                }
+                Directory.CreateDirectory(dir);
                 fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
                 _streams[path] = fs;
                 return fs;
             }
+        }
+
+        /// <summary>
+        /// Dispose every stream created by the factory.
+        /// </summary>
+        public static void DisposeAll()
+        {
+            lock (_lock)
+            {
+                foreach (var fs in _streams.Values)
+                {
+                    fs?.Dispose();
+                }
+                _streams.Clear();
+            }
+        }
+
+        private static bool StreamIsAlive(FileStream stream)
+        {
+            // A disposed FileStream throws ObjectDisposedException from SafeFileHandle (the getter
+            // flushes first), so probe the capability flags, which are simply cleared on dispose.
+            return stream != null && (stream.CanRead || stream.CanWrite);
         }
     }
 }

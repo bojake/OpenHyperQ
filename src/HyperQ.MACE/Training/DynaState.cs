@@ -25,6 +25,7 @@ namespace HyperQ.MACE.Training
         {
             if (other is null) return false;
             DynaEntry<T> b = other as DynaEntry<T>;
+            if (b is null) return false;
             if (EqualityComparer<T>.Default.Equals(b.Item1, Item1))
             {
                 for (int i = 0; i < Item2.Length; i++)
@@ -37,7 +38,9 @@ namespace HyperQ.MACE.Training
         }
         public override bool Equals(object o)
         {
-            return o.GetHashCode() == GetHashCode();
+            // Compare via the strongly typed equality rather than hash codes:
+            // distinct entries can share a hash without being equal.
+            return Equals(o as IDynaEntry);
         }
 
         public override int GetHashCode()
