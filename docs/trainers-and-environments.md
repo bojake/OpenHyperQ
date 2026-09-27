@@ -130,14 +130,16 @@ trainer.EnableDyna(dyna, freq: 0.5, mode: DynaSweepMode.Uniform);
 
 The trainer can pass advantage estimates into selectors that use `ApplyAdvantage(...)`, such as policy-gradient selectors.
 
+Every Q update records an advantage for its step, `A(s,a) = Q(s,a) - V(s)`, where `Q(s,a)` is the value just written and `V(s)` is the mean of the state's action row. The baseline depends only on the state, which keeps the policy gradient unbiased and, unlike a plain TD error, keeps the signal alive after the critic has converged. `Advantage[i]` returns the step's advantage divided by the root mean square of the episode's advantages so far; it is not centred, because the sign carries the information.
+
 ```csharp
 trainer.AdvantageEstimation = AdvantageMode.OneStep;
 ```
 
 Available modes:
 
-- `OneStep`: applies one-step TD error during each step;
-- `PostEpisodeGAE`: applies one-step TD during the episode and generalized advantage after the episode;
+- `OneStep`: applies the scaled step advantage during each step;
+- `PostEpisodeGAE`: applies the step advantage during the episode and a generalized-advantage pass over the recorded advantages after it;
 - `EligibilityTraceGAE`: applies an online eligibility trace;
 - `DeferredGAE`: applies full GAE after the episode.
 

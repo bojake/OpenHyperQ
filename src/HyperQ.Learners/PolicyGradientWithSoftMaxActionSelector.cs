@@ -89,17 +89,24 @@ namespace HyperQ.Learners
                 _Theta[s] = sm;
             }
             var softmax = _Theta[s];
+            // Snapshot the probabilities: the gradient is taken at the policy before the step, and every
+            // write renormalizes the others.
+            int n = (int)_actionSpace.MaximumNumberOfActions;
+            double[] p = new double[n];
+            for (int i = 0; i < n; i++)
+                p[i] = softmax[i];
             // update all actions
-            for (int i = 0; i < _actionSpace.MaximumNumberOfActions; i++)
+            // NOTE: the RunningSoftMax indexer reads back the probability but sets the logit, so the step has
+            // to be written against Logit(i); "softmax[i] += delta" replaced the logit with p(i) + delta.
+            for (int i = 0; i < n; i++)
             {
-                double p = softmax[i];
                 if (i == a.Index)
                 {
-                    softmax[i] += hp.Alpha * advantage * (1.0 - p);
+                    softmax[i] = softmax.Logit(i) + hp.Alpha * advantage * (1.0 - p[i]);
                 }
                 else
                 {
-                    softmax[i] -= hp.Alpha * advantage * p;
+                    softmax[i] = softmax.Logit(i) - hp.Alpha * advantage * p[i];
                 }
             }
         }

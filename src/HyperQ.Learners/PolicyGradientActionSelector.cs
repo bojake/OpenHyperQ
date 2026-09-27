@@ -68,15 +68,21 @@ namespace HyperQ.Learners
                 }
             }
             double objective = logit.Objective((int)a.Index, advantage, hp.Omega);
-            double g = (1.0 - logit.Probability((int)a.Index)) * objective; // This should be cumulative
-            logit[(int)a.Index] += hp.Alpha * g;
+            // Softmax policy gradient: d log pi(a)/d theta_a = 1 - pi(a) and d log pi(a)/d theta_i = -pi(i).
+            // The gradient is taken at the policy before this step, so snapshot the probabilities first.
+            // NOTE: the RunningLogit indexer reads back the probability but sets the logit, so the step has
+            // to be written against Logit(i); "logit[i] += delta" replaced the logit with p(i) + delta, which
+            // pinned every logit into [0,1] and kept the policy near uniform forever.
             RunningNormalizer priors = logit.LockPriors();
+            int taken = (int)a.Index;
+            double g = (1.0 - priors[taken]) * objective; // This should be cumulative
+            logit[taken] = logit.Logit(taken) + hp.Alpha * g;
             // -p*Objective is the counter update
             foreach(int i in priors.Keys)
             {
-                if (i == a.Index)
+                if (i == taken)
                     continue;
-                logit[i] -= hp.Alpha * priors[i] * objective * hp.PenaltyAnnealingFactor;
+                logit[i] = logit.Logit(i) - hp.Alpha * priors[i] * objective * hp.PenaltyAnnealingFactor;
             }
         }
         public virtual double LastActionProbability { 

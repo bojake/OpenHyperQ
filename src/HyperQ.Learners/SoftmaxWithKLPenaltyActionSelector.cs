@@ -38,15 +38,16 @@ namespace HyperQ.Learners
             // 2) apply a KL(p||p_ref) penalty gradient to keep policy close to reference
             var softmax = Theta[s];
 
+            // Snapshot the current probabilities; every write below renormalizes the others.
             ICollection<int> keys = softmax.Keys.ToList();
+            Dictionary<int, double> p = keys.ToDictionary(k => k, k => softmax[k]);
             foreach (int idx in keys)
             {
-                // current policy probability
-                double p = softmax[idx];
                 // gradient of D_KL(p||p_ref) = log(p/p_ref) + 1
-                double klGrad = Math.Log(p / _uniformRef) + 1.0;
-                // subtract a small step in direction of reducing KL
-                softmax[idx] -= hp.Alpha * KlCoef * klGrad;
+                double klGrad = Math.Log(p[idx] / _uniformRef) + 1.0;
+                // subtract a small step in direction of reducing KL, against the logit: the indexer reads
+                // back the probability, so "softmax[idx] -= step" replaced the logit with p - step.
+                softmax[idx] = softmax.Logit(idx) - hp.Alpha * KlCoef * klGrad;
             }
         }
     }

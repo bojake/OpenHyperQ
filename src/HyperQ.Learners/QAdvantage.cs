@@ -25,9 +25,16 @@ namespace HyperQ.Learners
         }
 
         /// <summary>
-        /// Returns the advantage computed for the given iteration/step in the episode,
-        /// normalized using running mean and standard deviation for numerical stability.
+        /// Returns the advantage recorded for the given iteration/step in the episode, scaled by the root
+        /// mean square of the advantages recorded so far so that the policy selectors see a signal of
+        /// unit magnitude whatever the reward scale of the environment.
         /// </summary>
+        /// <remarks>
+        /// The scaling deliberately does not centre the values. The recorded advantages already carry a
+        /// state baseline, so their sign is meaningful: once a policy is good, nearly every step has a
+        /// positive advantage, and subtracting the episode mean would turn that into a zero-mean noise
+        /// signal that random-walks the policy away from what it learned.
+        /// </remarks>
         /// <param name="iteration">The iteration or step in the episode trace</param>
         /// <returns></returns>
         public double this[int iteration]
@@ -37,12 +44,10 @@ namespace HyperQ.Learners
                 int n = _adv.Count;
                 if (n < 2)
                     return _adv[iteration];
-                double mean = _adv_sum / n;
-                double variance = (_adv_sum_sq / n) - (mean * mean);
-                double std = Math.Sqrt(Math.Max(variance, 0.0));
-                if (std < EPSILON)
-                    return _adv[iteration] - mean;
-                return (_adv[iteration] - mean) / (std + EPSILON);
+                double rms = Math.Sqrt(Math.Max(_adv_sum_sq / n, 0.0));
+                if (rms < EPSILON)
+                    return _adv[iteration];
+                return _adv[iteration] / (rms + EPSILON);
             }
         }
         public double AddReturn(double r2, double g)

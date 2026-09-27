@@ -594,17 +594,10 @@ namespace HyperQ.Learners
             AddState(sprime);
             double prime_v = this[sprime, aprime];
             double curr_v = this[s, a];
-            double new_v = curr_v + hp.Alpha * (r + hp.Gamma * prime_v - curr_v);
+            double baseline = QUpdateCore.Baseline(GetActionArray(s));
+            double new_v = QUpdateCore.UpdateAndTrack(curr_v, prime_v, r, hp, Advantage, baseline);
             this[s, a] = new_v;
-            Advantage.AddAdvantage(Advantage.AddReturn(new_v, hp.Gamma) - curr_v);
             return new_v;
-            /*
-            double prime_v = GetValue(sprime, aprime);
-            double curr_v = GetValue(s, a);
-            curr_v += hp.Alpha * (r + hp.Gamma * prime_v - curr_v);
-            SetValue(s, a, curr_v);
-            return curr_v;
-            */
         }
         public override double OffPolicyUpdate(T s, int a, T sprime, double r, HyperParams hp, EvalMethodType evalType = EvalMethodType.Max)
         {
@@ -630,33 +623,9 @@ namespace HyperQ.Learners
             }
             double prime_v = this[sprime, aprime];
             double curr_v = this[s, a];
-            double new_v = curr_v + hp.Alpha * (r + hp.Gamma * prime_v - curr_v);
+            double baseline = QUpdateCore.Baseline(GetActionArray(s));
+            double new_v = QUpdateCore.UpdateAndTrack(curr_v, prime_v, r, hp, Advantage, baseline);
             this[s, a] = new_v;
-            Advantage.AddAdvantage(Advantage.AddReturn(new_v, hp.Gamma) - curr_v);
-            /*
-            int aprime = a;
-            QAction result = null;
-            switch (evalType)
-            {
-                case EvalMethodType.Max:
-                    result = ArgMax(sprime);
-                    break;
-                case EvalMethodType.Min:
-                    result = ArgMin(sprime);
-                    break;
-                default:
-                    result = ArgMax(sprime);
-                    break;
-            }
-            if (result != null)
-            {
-                aprime = result.Item1;
-            }
-            double prime_v = GetValue(sprime, aprime);
-            double curr_v = GetValue(s, a);
-            curr_v += hp.Alpha * (r + hp.Gamma * prime_v - curr_v);
-            SetValue(s, a, curr_v);
-            */
             return new_v;
         }
 

@@ -40,6 +40,16 @@ namespace HyperQ.Util
             return (_values.ContainsKey(idx));
         }
 
+        /// <summary>
+        /// Returns the value exactly as it was stored for the given index (0 when the index has never been
+        /// set), bypassing any transformation a subclass applies on read.
+        /// </summary>
+        protected double __raw_value(int idx)
+        {
+            double v;
+            return _values.TryGetValue(idx, out v) ? v : 0.0;
+        }
+
         protected virtual double __get_value(int idx)
         {
             if (__has_value(idx))

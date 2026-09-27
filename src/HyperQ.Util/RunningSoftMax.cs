@@ -15,6 +15,17 @@ namespace HyperQ.Util
         }
 
         /// <summary>
+        /// Returns the logit stored for the given index (0 when it has never been set). The indexer is
+        /// asymmetric: it is set with a logit but reads back the softmax probability, so a gradient step
+        /// must be written as <c>sm[i] = sm.Logit(i) + delta</c>; <c>sm[i] += delta</c> would replace the
+        /// logit with the probability plus delta.
+        /// </summary>
+        public double Logit(int idx)
+        {
+            return __raw_value(idx);
+        }
+
+        /// <summary>
         /// Returns the exp(value - max) for the softmax of logits calculation.
         /// </summary>
         /// <param name="idx"></param>

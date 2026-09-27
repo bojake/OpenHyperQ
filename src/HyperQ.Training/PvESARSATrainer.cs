@@ -635,7 +635,7 @@ namespace HyperQ.Training
                     break;
 
                 case AdvantageMode.EligibilityTraceGAE:
-                    // Online TD(λ): update eligibility trace with raw TD error and apply
+                    // Online TD(λ): fold the raw (unscaled) step advantage into the eligibility trace and apply
                     double delta = _Q.Advantage.RawAdvantage(iter);
                     double traceValue = _Q.Advantage.UpdateEligibilityTrace(delta, hp.Gamma, hp.Lambda);
                     ActionSelector.ApplyAdvantage(_Q.MapState(s), a, traceValue, hp);

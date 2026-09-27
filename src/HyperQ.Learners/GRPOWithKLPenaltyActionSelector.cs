@@ -37,18 +37,19 @@ namespace HyperQ.Learners
 
             // 2) apply a KL(p||p_ref) penalty gradient to keep policy close to reference
             var logits = Theta[s];
-            // ensure priors locked so .Probability yields current p
+            // Snapshot the current probabilities; every write below renormalizes the others.
             var priors = logits.LockPriors();
 
             foreach (int idx in priors.Keys)
             {
                 // current policy probability
-                double p = logits.Probability(idx);
+                double p = priors[idx];
                 // gradient of D_KL(p||p_ref) = log(p/p_ref) + 1
                 double klGrad = Math.Log(p / _uniformRef);// + 1.0;
                 // double klGrad = p - _uniformRef;
-                // subtract a small step in direction of reducing KL
-                logits[idx] -= hp.Alpha * KlCoef * klGrad;
+                // subtract a small step in direction of reducing KL, against the logit: the indexer reads
+                // back the probability, so "logits[idx] -= step" replaced the logit with p - step.
+                logits[idx] = logits.Logit(idx) - hp.Alpha * KlCoef * klGrad;
             }
         }
     }

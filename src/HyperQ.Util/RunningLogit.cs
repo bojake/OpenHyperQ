@@ -103,6 +103,18 @@ namespace HyperQ.Util
         {
             return _exps[idx];
         }
+
+        /// <summary>
+        /// Returns the logit stored for the given index (0 when it has never been set). The indexer is
+        /// asymmetric: it is set with a logit but reads back the probability, so a gradient step must be
+        /// written as <c>rl[i] = rl.Logit(i) + delta</c>; <c>rl[i] += delta</c> would replace the logit with
+        /// the probability plus delta.
+        /// </summary>
+        public double Logit(int idx)
+        {
+            double v;
+            return _logits.TryGetValue(idx, out v) ? v : 0.0;
+        }
         /// <summary>
         /// Set/get the logit value for the given index. Setting the logit value
         /// will update the exponential probabilities and running average of exponents.
@@ -132,21 +144,20 @@ namespace HyperQ.Util
                             _maxLogitIndex = i;
                         }
                     }
+                    // Plain softmax. Subtracting the maximum logit is all the numerical protection the
+                    // exponent needs: it can never overflow. (An earlier version also divided the difference
+                    // by |max logit| whenever that exceeded 1, i.e. a temperature equal to the largest logit,
+                    // which made the distribution flatter the more a policy learned and capped the best
+                    // action at roughly even odds.)
                     foreach (int i in _logits.Keys)
                     {
-                        double exp = _logits[i] - _maxLogit;
-                        if (Math.Abs(_maxLogit) > 1.0)
-                            exp /= Math.Abs(_maxLogit);
-                        _exps[i] = Math.Exp(exp);
+                        _exps[i] = Math.Exp(_logits[i] - _maxLogit);
                     }
                 }
                 else
                 {
                     // Ok to set the value here because the max is not changing
-                    double exp = value - _maxLogit;
-                    if (Math.Abs(_maxLogit) > 1.0) // Not normalized probabilities
-                        exp /= Math.Abs(_maxLogit);
-                    _exps[idx] = Math.Exp(exp);
+                    _exps[idx] = Math.Exp(value - _maxLogit);
                 }
                 _dirty_priors = true;
             }

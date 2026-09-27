@@ -221,7 +221,8 @@ namespace HyperQ.Learners
             Q<decimal> q2 = qq[(_WhichQ + 1) % 2];
             double prime_v = q2.GetValue(sprime, aprime);
             double curr_v = q1.GetValue(s, a);
-            double new_v = QUpdateCore.UpdateAndTrack(curr_v, prime_v, r, hp, Advantage);
+            double baseline = QUpdateCore.Baseline(q1.GetActionArray(s));
+            double new_v = QUpdateCore.UpdateAndTrack(curr_v, prime_v, r, hp, Advantage, baseline);
             q1.SetValue(s, a, new_v);
             return new_v;
         }
@@ -238,7 +239,8 @@ namespace HyperQ.Learners
             int aprime = QUpdateCore.SelectGreedyAction(sprime, a, evalType, q1.ArgMax, q1.ArgMin);
             double prime_v = q2.GetValue(sprime, aprime);
             double curr_v = q1.GetValue(s, a);
-            double new_v = QUpdateCore.UpdateAndTrack(curr_v, prime_v, r, hp, Advantage);
+            double baseline = QUpdateCore.Baseline(q1.GetActionArray(s));
+            double new_v = QUpdateCore.UpdateAndTrack(curr_v, prime_v, r, hp, Advantage, baseline);
             q1.SetValue(s, a, new_v);
             return new_v;
         }
