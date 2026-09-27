@@ -257,7 +257,6 @@ namespace HyperQ.Test
                     path, q, hp,
                     episodeCount: 500,
                     elapsedMs: 12345,
-                    advantageMode: AdvantageMode.PostEpisodeGAE,
                     sweepMode: DynaSweepMode.Prioritized);
 
                 Assert.IsTrue(File.Exists(path), "Checkpoint file should exist");
@@ -272,7 +271,6 @@ namespace HyperQ.Test
                 // Metadata
                 Assert.AreEqual(500, meta.EpisodeCount, "Episode count should be restored");
                 Assert.AreEqual(12345L, meta.ElapsedMilliseconds, "Elapsed time should be restored");
-                Assert.AreEqual(AdvantageMode.PostEpisodeGAE, meta.AdvantageMode, "AdvantageMode should be restored");
                 Assert.AreEqual(DynaSweepMode.Prioritized, meta.SweepMode, "SweepMode should be restored");
 
                 // HyperParams
@@ -314,7 +312,7 @@ namespace HyperQ.Test
                     writer.Write(1);      // FORMAT_VERSION 1
                     writer.Write(42);     // episodeCount
                     writer.Write(1000L);  // elapsedMs
-                    writer.Write((int)AdvantageMode.OneStep);
+                    writer.Write(0);      // reserved slot (the advantage mode of the first format releases)
                     writer.Write((int)DynaSweepMode.Uniform);
                     hp.SaveCheckpoint(writer);
                     q.SaveCheckpoint(writer);

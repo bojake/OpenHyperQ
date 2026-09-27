@@ -21,20 +21,6 @@ namespace HyperQ.Training
     }
 
     /// <summary>
-    /// Controls how advantages are computed and applied to the action selector.
-    /// </summary>
-    public enum AdvantageMode
-    {
-        /// <summary>One-step TD error applied per step (current default behavior).</summary>
-        OneStep,
-        /// <summary>Per-step one-step TD during episode, then post-episode GAE backward pass reapplied to the policy.</summary>
-        PostEpisodeGAE,
-        /// <summary>Online eligibility trace: e_t = δ_t + γλ·e_{t-1} applied per step (TD(λ)).</summary>
-        EligibilityTraceGAE,
-        /// <summary>No per-step advantage application; full GAE computed and batch-applied at episode end.</summary>
-        DeferredGAE
-    }
-    /// <summary>
     /// Implements the SARSA {(S,a)<-R : (S',a')} evaluation method, supporting on-policy and off-policy evaluation.
     /// </summary>
     /// <typeparam name="T">The type for the state</typeparam>
@@ -56,20 +42,10 @@ namespace HyperQ.Training
         public double DynaFrequency { get; private set; } = 0.5;
         public double DynaUpdateFrequency { get; private set; } = 0.8;
         public DynaSweepMode SweepMode { get; set; } = DynaSweepMode.Uniform;
-        /// <summary>
-        /// Controls how advantages are computed and applied to the action selector.
-        /// </summary>
-        public AdvantageMode AdvantageEstimation { get; set; } = AdvantageMode.OneStep;
         public int HysteresisSteps { get; private set; } = 10;
         public bool WarmupEnabled { get; set; } = false;
         public bool InTraining { get; set; } = true;
         private List<Tuple<T, QAction, T, QAction, ScalarReward>> _Episode = new List<Tuple<T, QAction, T, QAction, ScalarReward>>();
-        /// <summary>
-        /// Trajectory buffer for post-episode and deferred GAE modes.
-        /// Stores (mapped_state_index, action) per step for advantage replay.
-        /// </summary>
-        private List<Tuple<uint, QAction>> _GaeTrajectory = new List<Tuple<uint, QAction>>();
-
         protected Q<T> _Q;
         public IActionSelector<T> ActionSelector { get; set; } = null;
         protected QRandom _random = QRandom.Instance;
@@ -396,8 +372,6 @@ namespace HyperQ.Training
             if (!WarmupEnabled)
                 ActionSelector.StartEpisode();
             _Q.ResetAdvantageTrace();
-            _Q.Advantage?.ResetEligibilityTrace();
-            _GaeTrajectory.Clear();
             Tuple<T, QAction> last_sa = null;
             if (!WarmupEnabled)
             {
@@ -489,7 +463,6 @@ namespace HyperQ.Training
             _Episode.Clear();
             if (!WarmupEnabled)
             {
-                ApplyGAEPostEpisode(hp);
                 if (_Memory != null)
                 {
                     _Memory.EndEpisode();
@@ -497,7 +470,6 @@ namespace HyperQ.Training
                 env.Metrics.EndEpisode(null);
                 ActionSelector.EndEpisode(env.Metrics.TotalReward);
             }
-            _GaeTrajectory.Clear();
             OnEpisodeEnd?.Invoke();
         }
         #endregion
@@ -524,8 +496,6 @@ namespace HyperQ.Training
             int iter = 0;
             env.Render();
             _Q.ResetAdvantageTrace();
-            _Q.Advantage?.ResetEligibilityTrace();
-            _GaeTrajectory.Clear();
             while (!done)
             {
                 if (!WarmupEnabled)
@@ -604,7 +574,6 @@ namespace HyperQ.Training
             _Episode.Clear();
             if (!WarmupEnabled)
             {
-                ApplyGAEPostEpisode(hp);
                 env.Metrics.EndEpisode(null);
                 ActionSelector.EndEpisode(env.Metrics.TotalReward);
                 if (_Memory != null)
@@ -612,71 +581,18 @@ namespace HyperQ.Training
                     _Memory.EndEpisode();
                 }
             }
-            _GaeTrajectory.Clear();
             OnEpisodeEnd?.Invoke();
         }
         #endregion
 
-        // ── GAE integration helpers ──
-
         /// <summary>
-        /// Applies the advantage for a single step based on the current AdvantageEstimation mode.
+        /// Hands the action selector the advantage of the step just updated. The learner's Advantage trace
+        /// holds Q(s,a) minus the state's mean action value, scaled to unit magnitude over the episode.
         /// Called inline during both on-policy and off-policy episodes.
         /// </summary>
         private void ApplyAdvantageForStep(T s, QAction a, int iter, HyperParams hp)
         {
-            switch (AdvantageEstimation)
-            {
-                case AdvantageMode.OneStep:
-                case AdvantageMode.PostEpisodeGAE:
-                    // OneStep: apply one-step TD advantage immediately
-                    // PostEpisodeGAE: apply one-step now, GAE correction comes post-episode
-                    ActionSelector.ApplyAdvantage(_Q.MapState(s), a, _Q.Advantage[iter], hp);
-                    break;
-
-                case AdvantageMode.EligibilityTraceGAE:
-                    // Online TD(λ): fold the raw (unscaled) step advantage into the eligibility trace and apply
-                    double delta = _Q.Advantage.RawAdvantage(iter);
-                    double traceValue = _Q.Advantage.UpdateEligibilityTrace(delta, hp.Gamma, hp.Lambda);
-                    ActionSelector.ApplyAdvantage(_Q.MapState(s), a, traceValue, hp);
-                    break;
-
-                case AdvantageMode.DeferredGAE:
-                    // No per-step application; just record the trajectory
-                    break;
-            }
-
-            // Record trajectory for post-episode modes
-            if (AdvantageEstimation == AdvantageMode.PostEpisodeGAE
-                || AdvantageEstimation == AdvantageMode.DeferredGAE)
-            {
-                _GaeTrajectory.Add(new Tuple<uint, QAction>(_Q.MapState(s), a));
-            }
-        }
-
-        /// <summary>
-        /// Applies GAE advantages post-episode for PostEpisodeGAE and DeferredGAE modes.
-        /// Computes the backward pass over stored TD errors, normalizes, and replays
-        /// ApplyAdvantage over the trajectory.
-        /// </summary>
-        private void ApplyGAEPostEpisode(HyperParams hp)
-        {
-            if (AdvantageEstimation != AdvantageMode.PostEpisodeGAE
-                && AdvantageEstimation != AdvantageMode.DeferredGAE)
-                return;
-
-            if (_GaeTrajectory.Count == 0)
-                return;
-
-            double[] gae = _Q.Advantage.ComputeGAE(hp.Gamma, hp.Lambda);
-            double[] normalized = QAdvantage.NormalizeGAE(gae);
-
-            int count = Math.Min(normalized.Length, _GaeTrajectory.Count);
-            for (int t = 0; t < count; t++)
-            {
-                var step = _GaeTrajectory[t];
-                ActionSelector.ApplyAdvantage(step.Item1, step.Item2, normalized[t], hp);
-            }
+            ActionSelector.ApplyAdvantage(_Q.MapState(s), a, _Q.Advantage[iter], hp);
         }
     }
 }

@@ -78,7 +78,7 @@ Use them when:
 
 ## PolicyGradientActionSelector<T>
 
-`PolicyGradientActionSelector<T>` maintains per-state logits and updates them through `ApplyAdvantage(...)`. After every Q update the SARSA trainer calls `ApplyAdvantage` with the advantage of the action just taken: the updated `Q(s,a)` minus the mean of the state's action values, scaled to unit magnitude over the episode. The trainer's advantage modes select the GAE-style variants of that signal.
+`PolicyGradientActionSelector<T>` maintains per-state logits and updates them through `ApplyAdvantage(...)`. After every Q update the SARSA trainer calls `ApplyAdvantage` with the advantage of the action just taken: the updated `Q(s,a)` minus the mean of the state's action values, scaled to unit magnitude over the episode.
 
 Use it when:
 

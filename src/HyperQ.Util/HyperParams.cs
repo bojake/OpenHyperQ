@@ -41,8 +41,10 @@ namespace HyperQ.Util
         /// </summary>
         public QParam PenaltyAnnealingFactor { get; private set; } = null; // new QParam(0.5, 0.99, 0.1);
         /// <summary>
-        /// The GAE bias-variance tradeoff parameter. 0 = one-step TD (high bias, low variance),
-        /// 1 = Monte Carlo (low bias, high variance). Typical values: 0.9–0.99.
+        /// Reserved for a future GAE-style critic: the bias-variance trade-off λ of generalized advantage
+        /// estimation (0 = one-step, 1 = Monte Carlo). Nothing in the current learners or trainers reads it.
+        /// It is kept so the constructors and the checkpoint layout stay stable, and it is decayed, reset,
+        /// saved and restored like the other parameters.
         /// </summary>
         public QParam Lambda { get; private set; } = null;
         /// <summary>

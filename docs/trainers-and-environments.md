@@ -126,24 +126,15 @@ trainer.EnableDyna(dyna, freq: 0.5, mode: DynaSweepMode.Uniform);
 
 `DynaSweepMode.Prioritized` ranks replay by TD error. Start with uniform Dyna unless you specifically need prioritized planning.
 
-## Advantage Modes
+## Advantage Signal
 
-The trainer can pass advantage estimates into selectors that use `ApplyAdvantage(...)`, such as policy-gradient selectors.
+Selectors that implement `ApplyAdvantage(...)`, such as the policy-gradient selectors, are called by the trainer after every Q update with the advantage of the action just taken.
 
 Every Q update records an advantage for its step, `A(s,a) = Q(s,a) - V(s)`, where `Q(s,a)` is the value just written and `V(s)` is the mean of the state's action row. The baseline depends only on the state, which keeps the policy gradient unbiased and, unlike a plain TD error, keeps the signal alive after the critic has converged. `Advantage[i]` returns the step's advantage divided by the root mean square of the episode's advantages so far; it is not centred, because the sign carries the information.
 
-```csharp
-trainer.AdvantageEstimation = AdvantageMode.OneStep;
-```
+There is no generalized advantage estimation (GAE) in the trainer. GAE recovers action values from a state-value critic and a noisy trajectory; a Q table already holds the action values, so the direct advantage above is both simpler and lower variance. `HyperParams.Lambda` is the one residual of that idea: it is reserved for a future GAE-style critic, is not read by any learner or trainer, and is kept so the constructors and the checkpoint layout stay stable.
 
-Available modes:
-
-- `OneStep`: applies the scaled step advantage during each step;
-- `PostEpisodeGAE`: applies the step advantage during the episode and a generalized-advantage pass over the recorded advantages after it;
-- `EligibilityTraceGAE`: applies an online eligibility trace;
-- `DeferredGAE`: applies full GAE after the episode.
-
-For normal Q learners with epsilon-greedy selection, the default `OneStep` is sufficient.
+For normal Q learners with epsilon-greedy selection the advantage is recorded but never used.
 
 ## MACEPvESARSATrainer<T, RT>
 

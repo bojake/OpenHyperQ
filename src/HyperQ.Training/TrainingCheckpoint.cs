@@ -29,7 +29,6 @@ namespace HyperQ.Training
         /// <param name="hp">Current hyperparameters with decayed positions.</param>
         /// <param name="episodeCount">Number of completed episodes.</param>
         /// <param name="elapsedMs">Total wall-clock training time in milliseconds.</param>
-        /// <param name="advantageMode">Active advantage estimation mode.</param>
         /// <param name="sweepMode">Active Dyna sweep mode.</param>
         /// <param name="selector">Optional: action selector (must implement <see cref="ICheckpointable"/>).</param>
         public static void Save(
@@ -38,7 +37,6 @@ namespace HyperQ.Training
             HyperParams hp,
             int episodeCount,
             long elapsedMs = 0,
-            AdvantageMode advantageMode = AdvantageMode.OneStep,
             DynaSweepMode sweepMode = DynaSweepMode.Uniform,
             ICheckpointable selector = null)
         {
@@ -49,7 +47,7 @@ namespace HyperQ.Training
                 writer.Write(FORMAT_VERSION);
                 writer.Write(episodeCount);
                 writer.Write(elapsedMs);
-                writer.Write((int)advantageMode);
+                writer.Write(0); // reserved: the first releases of the format stored the trainer's advantage mode here
                 writer.Write((int)sweepMode);
 
                 // ── HyperParams ──
@@ -108,7 +106,7 @@ namespace HyperQ.Training
 
                 int episodeCount = reader.ReadInt32();
                 long elapsedMs = reader.ReadInt64();
-                var advantageMode = (AdvantageMode)reader.ReadInt32();
+                reader.ReadInt32(); // reserved slot (the advantage mode of the first releases of the format), ignored
                 var sweepMode = (DynaSweepMode)reader.ReadInt32();
 
                 // ── HyperParams ──
@@ -151,7 +149,6 @@ namespace HyperQ.Training
                 {
                     EpisodeCount = episodeCount,
                     ElapsedMilliseconds = elapsedMs,
-                    AdvantageMode = advantageMode,
                     SweepMode = sweepMode,
                     FormatVersion = version
                 };
@@ -170,9 +167,6 @@ namespace HyperQ.Training
 
         /// <summary>Total wall-clock training time in milliseconds.</summary>
         public long ElapsedMilliseconds { get; set; }
-
-        /// <summary>Advantage mode that was active when the checkpoint was saved.</summary>
-        public AdvantageMode AdvantageMode { get; set; }
 
         /// <summary>Dyna sweep mode that was active when the checkpoint was saved.</summary>
         public DynaSweepMode SweepMode { get; set; }
