@@ -48,6 +48,19 @@ namespace HyperQ.Util
         {
             _nextIndex = next;
         }
+
+        /// <summary>
+        /// Marks an index as taken, as a checkpoint restore does: it leaves the free list and the next index
+        /// moves past it.
+        /// </summary>
+        public void Reserve(uint idx)
+        {
+            _FreeIndices.Remove(idx);
+            if (_nextIndex <= idx)
+            {
+                _nextIndex = idx + 1;
+            }
+        }
         /// <summary>
         /// Adjusts the next index by changing the start value of this repo. This only affects the next index
         /// </summary>

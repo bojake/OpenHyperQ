@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using static System.Collections.Specialized.BitVector32;
 using HyperQ.Util;
+using HyperQ.Util.Licensing;
 
 namespace HyperQ.MACE.Training
 {
@@ -45,6 +46,7 @@ namespace HyperQ.MACE.Training
 
         public MACEPvESARSATrainer(QEvalType evalType = QEvalType.OnPolicy, QRandom ran = null)
         {
+            FeatureGate.Require(HyperQFeatures.Mace);
             if (ran != null)
             {
                 _random = ran;

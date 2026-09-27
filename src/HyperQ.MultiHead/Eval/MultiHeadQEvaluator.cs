@@ -1,8 +1,9 @@
-﻿using HyperQ.Env;
+using HyperQ.Env;
 using HyperQ.Learners;
 using HyperQ.MACE;
 using HyperQ.Util;
 using System;
+using HyperQ.Util.Licensing;
 
 namespace HyperQ.MultiHead.Eval
 {
@@ -20,6 +21,7 @@ namespace HyperQ.MultiHead.Eval
 
         public MultiHeadQEvaluator(MultiHeadQLearner<T> qLearner, IActionSelector<T> actionSelector, QRandom ran = null)
         {
+            FeatureGate.Require(HyperQFeatures.MultiHead);
             if (qLearner == null)
             {
                 throw new ArgumentNullException(nameof(qLearner));

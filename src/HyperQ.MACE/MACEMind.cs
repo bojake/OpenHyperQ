@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HyperQ.Util.Licensing;
 
 namespace HyperQ.MACE
 {
@@ -15,6 +16,7 @@ namespace HyperQ.MACE
 
         public MACEMind(Q<T> q, IActionSelector<T> actionSelector)
         {
+            FeatureGate.Require(HyperQFeatures.Mace);
             Mind = q;
             ActionSelector = actionSelector;
         }

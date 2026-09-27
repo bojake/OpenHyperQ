@@ -348,6 +348,7 @@ namespace LEM
                         _Q = CreateLearner(ras);
                         Console.WriteLine("Created the Q learner.");
                     }
+                    ApplyPendingLoad();
                     IPvEEnv<T> env = (IPvEEnv<T>)World;
                     if (args.actionModel == ActionSelectionModel.eGreedy)
                         selector = new eGreedyActionSelector<T>(ras);
@@ -558,14 +559,60 @@ namespace LEM
             return selector;
         }
 
+        private string _PendingLoad = null;
+
+        /// <summary>
+        /// Saves the learner as a HyperQ checkpoint. A name ending in .gz is written compressed; any other name
+        /// gets .gz appended.
+        /// </summary>
         public void Save(string fname)
         {
-            throw new NotSupportedException("LEM checkpoints need a typed .NET 10 serializer. BinaryFormatter has been removed from the OSS build.");
+            ICheckpointable learner = _Q as ICheckpointable;
+            if (learner == null)
+            {
+                Console.WriteLine("Nothing to save: the learner has not been created yet or does not support checkpoints.");
+                return;
+            }
+            string path = fname.EndsWith(".gz", StringComparison.OrdinalIgnoreCase) ? fname : fname + ".gz";
+            LearnerCheckpoint.SaveFile(path, learner);
+            Console.WriteLine("Saved the checkpoint of the Q learner to {0}", path);
         }
 
+        /// <summary>
+        /// Schedules a checkpoint to be restored into the learner once Run has created it from the options: a
+        /// checkpoint holds learned state, not the learner configuration.
+        /// </summary>
         public void Load(string fname)
         {
-            throw new NotSupportedException("LEM checkpoints need a typed .NET 10 serializer. BinaryFormatter has been removed from the OSS build.");
+            if (!File.Exists(fname) && File.Exists(fname + ".gz"))
+            {
+                fname += ".gz";
+            }
+            if (!File.Exists(fname))
+            {
+                Console.WriteLine("Checkpoint {0} does not exist. Ignoring.", fname);
+                return;
+            }
+            _PendingLoad = fname;
+        }
+
+        private void ApplyPendingLoad()
+        {
+            ICheckpointable learner = _Q as ICheckpointable;
+            if (_PendingLoad == null || learner == null)
+            {
+                return;
+            }
+            try
+            {
+                LearnerCheckpoint.LoadFile(_PendingLoad, learner);
+                Console.WriteLine("Loaded the Q state from {0}", _PendingLoad);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OOPS, {0} could not be loaded into the configured learner ({1}). Ignoring.", _PendingLoad, ex.Message);
+            }
+            _PendingLoad = null;
         }
 
         public void Run(ProgramArgs args)

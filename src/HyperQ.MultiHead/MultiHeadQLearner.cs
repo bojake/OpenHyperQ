@@ -1,4 +1,4 @@
-﻿using HyperQ.Learners;
+using HyperQ.Learners;
 using HyperQ.Util;
 using System;
 using System.Collections.Generic;
@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
+using HyperQ.Util.Licensing;
 
 namespace HyperQ.MultiHead
 {
@@ -34,6 +35,7 @@ namespace HyperQ.MultiHead
 
         public MultiHeadQLearner(Func<Q<T>> qFactory, int headCount, double lambda = 1.0, IRewardScalarizer scalarizer = null)
         {
+            FeatureGate.Require(HyperQFeatures.MultiHead);
             if (headCount <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(headCount), "headCount must be greater than zero.");
@@ -55,6 +57,7 @@ namespace HyperQ.MultiHead
 
         public MultiHeadQLearner(Q<T>[] heads, double lambda = 1.0, IRewardScalarizer scalarizer = null)
         {
+            FeatureGate.Require(HyperQFeatures.MultiHead);
             if (heads == null)
             {
                 throw new ArgumentNullException(nameof(heads));

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using HyperQ.Learners;
 using HyperQ.Env;
 using HyperQ.Util;
+using HyperQ.Util.Licensing;
 
 namespace HyperQ.MACE.Eval
 {
@@ -23,6 +24,7 @@ namespace HyperQ.MACE.Eval
 
         public MACEEvaluator(QRandom ran = null)
         {
+            FeatureGate.Require(HyperQFeatures.Mace);
             if (ran != null)
             {
                 _random = ran;

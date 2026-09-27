@@ -17,9 +17,11 @@ The closed-source licensing integration, prebuilt binaries, legacy project files
 
 HyperQ OSS is licensed under the GNU General Public License version 3.0 only. See [LICENSE](LICENSE).
 
+The OSS build performs no license checks. `HyperQ.Util.Licensing.FeatureGate` is the hook the commercial distribution uses to enforce entitlements; here it stays at its allow-all default.
+
 ## Release Status
 
-This tree is suitable for an initial source release, but should be presented as an early OSS release rather than a finished 1.0 API. It builds cleanly on .NET 10, includes focused samples, and avoids legacy binary serialization. The main known gap is checkpoint coverage: the typed checkpoint format exists, but not every learner or sample runner can persist yet.
+This tree is suitable for an initial source release, but should be presented as an early OSS release rather than a finished 1.0 API. It builds cleanly on .NET 10, includes focused samples, and persists every learner through a typed checkpoint format rather than binary serialization.
 
 ## Documentation
 
@@ -48,16 +50,14 @@ dotnet run --project samples/HuntTheWumpus/HuntTheWumpus.csproj -- 10 1 dims=4x4
 dotnet run --project samples/Wumpus.Viz/Wumpus.Viz.csproj
 ```
 
-Persistence in the original samples used `BinaryFormatter`, which is removed in modern .NET. The OSS sample runners currently reject `save=` and `load=` arguments until their learner types implement the typed checkpoint contract.
+The LEM and HuntTheWumpus runners persist their learners through the typed checkpoint format: `save=<file>` writes a compressed `.gz` checkpoint after training and `load=<file>` restores one into the learners configured on the command line before training. See [Checkpoints](docs/checkpoints.md).
 
 ## Checkpoints
 
-The OSS build includes the new typed checkpoint foundation for supported components:
+Every learner implements `HyperQ.Util.ICheckpointable`, and two containers wrap the raw checkpoints in a self-describing file:
 
-- `HyperQ.Util.ICheckpointable`
-- `HyperQ.Training.TrainingCheckpoint`
-- `HyperParams`, `QParam`, `RunningLogit`
-- `ClassicQ`
-- `PolicyGradientActionSelector<T>`
+- `HyperQ.Learners.LearnerCheckpoint`: one component (a learner or a stateful selector) with a magic string, format version and type name; `.gz` names are compressed.
+- `HyperQ.MACE.MACECheckpoint`: a set of MACE minds, each learner with its selector.
+- `HyperQ.Training.TrainingCheckpoint`: a learner with its hyperparameters, episode count and optional selector, for resuming a training run.
 
-The selected samples still keep `save=` and `load=` disabled because they commonly use learner types that do not yet implement `ICheckpointable`.
+Checkpointable components: `ClassicQ`, `ClassicQQ`, `MappedQ<T>`, `MappedQQ<T>`, `SingleHyperQ<T>`, `DoubleHyperQ<T>`, `LayeredHyperQ<T>`, the ordinal and mapped action spaces (a learner's rows depend on the order actions were first seen, so the mapping is saved with them), `PolicyGradientActionSelector<T>`, `HyperParams`, `QParam` and `RunningLogit`.

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HyperQ.Util;
+using System.IO;
 
 namespace HyperQ.Learners
 {
@@ -15,7 +16,7 @@ namespace HyperQ.Learners
     }
 
     [Serializable]
-    public class MappedQ<T> : BaseQ<T>
+    public class MappedQ<T> : BaseQ<T>, ICheckpointable
     {
         /// <summary>
         /// The matrix version of the Q data
@@ -669,6 +670,46 @@ namespace HyperQ.Learners
                 Console.WriteLine();
             }
             Console.WriteLine("Num Actions={0}/{3}, Num States={4} state offset={1}, action offset={2}", ActionSpace.MaximumNumberOfActions, _StateIndexStart, _ActionIndexStart, ActionSpace.NumberOfKnownActions, _StateMap.MappingCount);
+        }
+
+        // ── ICheckpointable ──
+
+        /// <summary>
+        /// Serializer for the state keys in checkpoints; set it for a key type without a built-in serializer
+        /// (see <see cref="QKeySerializerFactory"/>).
+        /// </summary>
+        public virtual IQKeySerializer<T> KeySerializer { get; set; }
+
+        private IQKeySerializer<T> Keys
+        {
+            get { return KeySerializer ?? (KeySerializer = QKeySerializerFactory.GetDefault<T>()); }
+        }
+
+        public int CheckpointVersion { get { return 1; } }
+
+        public virtual void SaveCheckpoint(BinaryWriter writer)
+        {
+            writer.Write(CheckpointVersion);
+            CheckpointIO.WriteActionSpace(writer, ActionSpace);
+            CheckpointIO.WriteIndexMapper(writer, _StateMap, Keys);
+            writer.Write(_StateIndexStart);
+            writer.Write(_ActionIndexStart);
+            CheckpointIO.WriteMatrix(writer, _Q);
+            CheckpointIO.WriteRows(writer, _data);
+            CheckpointIO.WriteRows(writer, _overlapData);
+        }
+
+        public virtual void LoadCheckpoint(BinaryReader reader)
+        {
+            int version = reader.ReadInt32();
+            CheckpointIO.ReadActionSpace(reader, ActionSpace);
+            CheckpointIO.ReadIndexMapper(reader, _StateMap, Keys);
+            _StateIndexStart = reader.ReadUInt32();
+            _ActionIndexStart = reader.ReadUInt32();
+            _Q = CheckpointIO.ReadMatrix(reader);
+            _data = CheckpointIO.ReadRows(reader);
+            _overlapData = CheckpointIO.ReadRows(reader);
+            _StateArgs.Clear();
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using HyperQ.Util;
+using HyperQ.Util.Licensing;
 
 namespace HyperQ.MACE.Training
 {
@@ -93,6 +94,7 @@ namespace HyperQ.MACE.Training
 
         public DynaState(int iters = 500, int max_histories = 0, bool positive_only = false)
         {
+            FeatureGate.Require(HyperQFeatures.Dyna);
             DynaIterations = iters;
 
             if (max_histories > 0)

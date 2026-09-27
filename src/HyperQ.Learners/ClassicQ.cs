@@ -397,12 +397,14 @@ namespace HyperQ.Learners
 
         // ── ICheckpointable ──
 
-        public int CheckpointVersion => 1;
+        public int CheckpointVersion => 2;
 
         public void SaveCheckpoint(BinaryWriter writer)
         {
             writer.Write(CheckpointVersion);
             writer.Write((int)ActionSpace.MaximumNumberOfActions);
+            // Version 2: the action space's own state, so the action-to-column mapping is restored with the rows
+            CheckpointIO.WriteActionSpace(writer, ActionSpace);
 
             // State map: count + entries
             writer.Write(_stateMap.Count);
@@ -458,6 +460,10 @@ namespace HyperQ.Learners
         {
             int version = reader.ReadInt32();
             int actionCount = reader.ReadInt32();
+            if (version >= 2)
+            {
+                CheckpointIO.ReadActionSpace(reader, ActionSpace);
+            }
 
             // State map
             int stateCount = reader.ReadInt32();

@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using static System.Collections.Specialized.BitVector32;
 using HyperQ.Util;
+using System.IO;
+using HyperQ.Util.Licensing;
 
 namespace HyperQ.Learners
 {
@@ -28,7 +30,7 @@ namespace HyperQ.Learners
     /// the state vector.
     /// </summary>
     [Serializable]
-    public class LayeredHyperQ<T> : IHyperQ<T>
+    public class LayeredHyperQ<T> : IHyperQ<T>, ICheckpointable
     {
         private QActionSpace<int> _actionSpace;
         public QActionSpace<int> ActionSpace
@@ -69,6 +71,7 @@ namespace HyperQ.Learners
 
         public LayeredHyperQ(Func<IHyperQ<T>> qGenerator, QActionSpace<int> actionSpace, Func<double> valueFunc = null, LayerUpdateMode updateMode = LayerUpdateMode.ScaledLayerUpdates)
         {
+            FeatureGate.Require(HyperQFeatures.LearnerLayered);
             _actionSpace = actionSpace;
             _Generator = qGenerator;
             UpdateMode = updateMode;
@@ -575,6 +578,53 @@ namespace HyperQ.Learners
                 snap[s] = GetActionArray(s);
             }
             return snap;
+        }
+
+        // ── ICheckpointable ──
+
+        /// <summary>
+        /// Serializer for the elements of the composite state keys in checkpoints; set it for an element type
+        /// without a built-in serializer (see <see cref="QKeySerializerFactory"/>).
+        /// </summary>
+        public virtual IQKeySerializer<T> KeySerializer { get; set; }
+
+        private IQKeySerializer<T> Keys
+        {
+            get { return KeySerializer ?? (KeySerializer = QKeySerializerFactory.GetDefault<T>()); }
+        }
+
+        public int CheckpointVersion { get { return 1; } }
+
+        /// <summary>
+        /// Writes the update mode, the action space, the registry of complete states and every layer. Layers
+        /// that share the registry (double-Q layers) write it again inside their own checkpoints; the restore
+        /// is idempotent.
+        /// </summary>
+        public virtual void SaveCheckpoint(BinaryWriter writer)
+        {
+            writer.Write(CheckpointVersion);
+            writer.Write((int)UpdateMode);
+            CheckpointIO.WriteActionSpace(writer, ActionSpace);
+            _StateMap.SaveCheckpoint(writer, Keys);
+            writer.Write(_Layers.Count);
+            for (int i = 0; i < _Layers.Count; i++)
+            {
+                CheckpointIO.Checkpointable(_Layers[i], "Layer " + i).SaveCheckpoint(writer);
+            }
+        }
+
+        public virtual void LoadCheckpoint(BinaryReader reader)
+        {
+            int version = reader.ReadInt32();
+            UpdateMode = (LayerUpdateMode)reader.ReadInt32();
+            CheckpointIO.ReadActionSpace(reader, ActionSpace);
+            _StateMap.LoadCheckpoint(reader, Keys);
+            int count = reader.ReadInt32();
+            EnsureLayers(count);
+            for (int i = 0; i < count; i++)
+            {
+                CheckpointIO.Checkpointable(_Layers[i], "Layer " + i).LoadCheckpoint(reader);
+            }
         }
     }
 }

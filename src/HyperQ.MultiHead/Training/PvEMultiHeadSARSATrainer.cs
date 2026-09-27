@@ -1,4 +1,4 @@
-﻿using HyperQ.Env;
+using HyperQ.Env;
 using HyperQ.Learners;
 using HyperQ.Training;
 using HyperQ.Util;

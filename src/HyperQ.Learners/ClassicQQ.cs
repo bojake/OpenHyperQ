@@ -5,11 +5,13 @@ using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
+using HyperQ.Util.Licensing;
 
 namespace HyperQ.Learners
 {
     [Serializable]
-    public class ClassicQQ : BaseQ<decimal>
+    public class ClassicQQ : BaseQ<decimal>, ICheckpointable
     {
         private Q<decimal> _Q1;
         private Q<decimal> _Q2;
@@ -19,6 +21,7 @@ namespace HyperQ.Learners
 
         public ClassicQQ(QActionSpace<int> actionSpace, Func<double> defaultValueAction = null, Func<double, double, double> blendingFunction = null, Random ran = null) : base(actionSpace)
         {
+            FeatureGate.Require(HyperQFeatures.LearnerDoubleQ);
             _Q1 = new ClassicQ(actionSpace, defaultValueAction);
             _Q2 = new ClassicQ(actionSpace, defaultValueAction);
             if (defaultValueAction != null)
@@ -301,6 +304,26 @@ namespace HyperQ.Learners
             {
                 CurrentQ().SetValue(state, action, value);
             }
+        }
+
+        // ── ICheckpointable ──
+
+        public int CheckpointVersion { get { return 1; } }
+
+        public void SaveCheckpoint(BinaryWriter writer)
+        {
+            writer.Write(CheckpointVersion);
+            writer.Write(_WhichQ);
+            CheckpointIO.Checkpointable(_Q1, "The first Q table").SaveCheckpoint(writer);
+            CheckpointIO.Checkpointable(_Q2, "The second Q table").SaveCheckpoint(writer);
+        }
+
+        public void LoadCheckpoint(BinaryReader reader)
+        {
+            int version = reader.ReadInt32();
+            _WhichQ = reader.ReadInt32();
+            CheckpointIO.Checkpointable(_Q1, "The first Q table").LoadCheckpoint(reader);
+            CheckpointIO.Checkpointable(_Q2, "The second Q table").LoadCheckpoint(reader);
         }
     }
 }

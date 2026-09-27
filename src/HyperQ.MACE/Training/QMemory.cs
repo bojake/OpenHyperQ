@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HyperQ.Util.Licensing;
 
 namespace HyperQ.MACE.Training
 {
@@ -27,6 +28,7 @@ namespace HyperQ.MACE.Training
 
         public QMemory(int maxSize, QRandom ran = null)
         {
+            FeatureGate.Require(HyperQFeatures.Mace);
             _MaxSize = maxSize;
             _random = ran;
             if (ran == null)

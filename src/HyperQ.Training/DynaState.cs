@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HyperQ.Util;
+using HyperQ.Util.Licensing;
 
 
 namespace HyperQ.Training
@@ -90,6 +91,7 @@ namespace HyperQ.Training
 
         public DynaState(int iters = 500, int max_histories = 0, bool positive_only = false)
         {
+            FeatureGate.Require(HyperQFeatures.Dyna);
             DynaIterations = iters;
 
             if (max_histories > 0)

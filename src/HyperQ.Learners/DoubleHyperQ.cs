@@ -4,11 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HyperQ.Util;
+using System.IO;
+using HyperQ.Util.Licensing;
 
 namespace HyperQ.Learners
 {
     [Serializable]
-    public class DoubleHyperQ<T> : IHyperQ<T>
+    public class DoubleHyperQ<T> : IHyperQ<T>, ICheckpointable
     {
         public QAdvantage Advantage { get; private set; } = null;
         private QRandom _random;
@@ -45,6 +47,7 @@ namespace HyperQ.Learners
 
         public DoubleHyperQ(QActionSpace<int> actionSpace, Func<double> defaultValueAction = null, QRandom ran = null, Func<double,double,double> blendingFunction=null)
         {
+            FeatureGate.Require(HyperQFeatures.LearnerDoubleQ);
             ActionSpace = actionSpace;
             _Q1 = new SingleHyperQ<T>(actionSpace, defaultValueAction);
             _Q2 = new SingleHyperQ<T>(actionSpace, defaultValueAction);
@@ -529,6 +532,29 @@ namespace HyperQ.Learners
             {
                 SetValue(state, action, value);
             }
+        }
+
+        // ── ICheckpointable ──
+
+        public int CheckpointVersion { get { return 1; } }
+
+        /// <summary>The two tables share one state map, which each table's checkpoint carries and restores.</summary>
+        public virtual void SaveCheckpoint(BinaryWriter writer)
+        {
+            writer.Write(CheckpointVersion);
+            writer.Write(_WhichQ);
+            _Q1.SaveCheckpoint(writer);
+            _Q2.SaveCheckpoint(writer);
+        }
+
+        public virtual void LoadCheckpoint(BinaryReader reader)
+        {
+            int version = reader.ReadInt32();
+            _WhichQ = reader.ReadInt32();
+            _Q1.LoadCheckpoint(reader);
+            _Q2.LoadCheckpoint(reader);
+            _StateArgs.Clear();
+            CreateDefaultActionArray();
         }
     }
 }

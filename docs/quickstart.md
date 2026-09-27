@@ -84,4 +84,4 @@ The environment owns domain state and rewards. The Q learner owns the value tabl
 
 ## Persistence Note
 
-The original samples used `BinaryFormatter`, which is intentionally not used in this OSS tree. Use the typed checkpoint API only with components that implement `ICheckpointable`. See [Checkpoints](checkpoints.md).
+Learners persist through the typed checkpoint format (`LearnerCheckpoint`, `MACECheckpoint`, `TrainingCheckpoint`); the LEM and HuntTheWumpus runners expose it as `save=` and `load=`. See [Checkpoints](checkpoints.md).

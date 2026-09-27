@@ -324,5 +324,63 @@ namespace HyperQ.Util
                 }
             sw.WriteLine("=============");
         }
+
+        // ── checkpoints ──
+
+        /// <summary>Restores one mapping recorded by a checkpoint: the state's key path maps to the given index.</summary>
+        public void Restore(QState<T> state, uint index)
+        {
+            QStateEnum<T> e = state.Enumerator;
+            MemoryBackedHyperMapper<T> map = this;
+            while (e.HasNext)
+            {
+                T k = e.Value;
+                if (map._Sub == null) map._Sub = new Dictionary<T, MemoryBackedHyperMapper<T>>();
+                MemoryBackedHyperMapper<T> next;
+                if (!map._Sub.TryGetValue(k, out next))
+                    map._Sub[k] = next = new MemoryBackedHyperMapper<T>(map._Final?.Repo);
+                map = next;
+                e.MoveNext();
+            }
+            if (map._Final == null) map._Final = new IndexMapper<T>();
+            IndexMapper<T> final = map._Final as IndexMapper<T>;
+            if (final == null)
+                throw new NotSupportedException("Only memory backed index mappers can be restored from a checkpoint.");
+            final.Restore(e.Value, index);
+        }
+
+        /// <summary>Forgets every mapping at every depth.</summary>
+        public void Clear()
+        {
+            (_Final as IndexMapper<T>)?.Clear();
+            _Sub = null;
+        }
+
+        /// <summary>Writes every mapped state, as its key path, with its index.</summary>
+        public void SaveCheckpoint(BinaryWriter writer, IQKeySerializer<T> elementKeys)
+        {
+            QStateKeySerializer<T> states = new QStateKeySerializer<T>(elementKeys);
+            List<KeyValuePair<QState<T>, uint>> mappings = Mappings();
+            writer.Write(mappings.Count);
+            foreach (KeyValuePair<QState<T>, uint> kv in mappings)
+            {
+                states.Serialize(writer.BaseStream, kv.Key);
+                writer.Write(kv.Value);
+            }
+        }
+
+        /// <summary>Replaces the mappings with those written by <see cref="SaveCheckpoint"/>.</summary>
+        public void LoadCheckpoint(BinaryReader reader, IQKeySerializer<T> elementKeys)
+        {
+            QStateKeySerializer<T> states = new QStateKeySerializer<T>(elementKeys);
+            Clear();
+            int count = reader.ReadInt32();
+            for (int i = 0; i < count; i++)
+            {
+                QState<T> state = states.Deserialize(reader.BaseStream);
+                uint index = reader.ReadUInt32();
+                Restore(state, index);
+            }
+        }
     }
 }

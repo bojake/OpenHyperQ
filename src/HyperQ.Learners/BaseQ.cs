@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HyperQ.Util.Licensing;
 
 namespace HyperQ.Learners
 {
@@ -20,6 +21,7 @@ namespace HyperQ.Learners
 
         public BaseQ(QActionSpace<int> actionSpace)
         {
+            FeatureGate.Require(HyperQFeatures.LearnerQ);
             Advantage = new QAdvantage();
             ActionSpace = actionSpace;
         }

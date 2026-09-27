@@ -4,11 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HyperQ.Util;
+using System.IO;
+using HyperQ.Util.Licensing;
 
 namespace HyperQ.Learners
 {
     [Serializable]
-    public class SingleHyperQ<T> : IHyperQ<T>
+    public class SingleHyperQ<T> : IHyperQ<T>, ICheckpointable
     {
         public QAdvantage Advantage { get; private set; } = null;
 
@@ -49,6 +51,7 @@ namespace HyperQ.Learners
         /// <param name="defaultValueAction">The lazy action initializer</param>
         public SingleHyperQ(QActionSpace<int> actionSpace, Func<double> defaultValueAction = null)
         {
+            FeatureGate.Require(HyperQFeatures.LearnerHyperQ);
             ActionSpace = actionSpace;
             if (defaultValueAction != null)
             {
@@ -526,6 +529,44 @@ namespace HyperQ.Learners
                 snap[s] = GetActionArray(s);
             }
             return snap;
+        }
+
+        // ── ICheckpointable ──
+
+        /// <summary>
+        /// Serializer for the elements of the composite state keys in checkpoints; set it for an element type
+        /// without a built-in serializer (see <see cref="QKeySerializerFactory"/>).
+        /// </summary>
+        public virtual IQKeySerializer<T> KeySerializer { get; set; }
+
+        private IQKeySerializer<T> Keys
+        {
+            get { return KeySerializer ?? (KeySerializer = QKeySerializerFactory.GetDefault<T>()); }
+        }
+
+        public int CheckpointVersion { get { return 1; } }
+
+        public virtual void SaveCheckpoint(BinaryWriter writer)
+        {
+            writer.Write(CheckpointVersion);
+            CheckpointIO.WriteActionSpace(writer, ActionSpace);
+            _StateMap.SaveCheckpoint(writer, Keys);
+            writer.Write(_StateIndexStart);
+            writer.Write(_ActionIndexStart);
+            CheckpointIO.WriteMatrix(writer, _Q);
+            CheckpointIO.WriteRows(writer, _data);
+        }
+
+        public virtual void LoadCheckpoint(BinaryReader reader)
+        {
+            int version = reader.ReadInt32();
+            CheckpointIO.ReadActionSpace(reader, ActionSpace);
+            _StateMap.LoadCheckpoint(reader, Keys);
+            _StateIndexStart = reader.ReadUInt32();
+            _ActionIndexStart = reader.ReadUInt32();
+            _Q = CheckpointIO.ReadMatrix(reader);
+            _data = CheckpointIO.ReadRows(reader);
+            _StateArgs.Clear();
         }
     }
 }

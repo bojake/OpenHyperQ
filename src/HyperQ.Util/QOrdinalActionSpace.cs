@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace HyperQ.Util
 {
@@ -109,6 +110,26 @@ namespace HyperQ.Util
                 _KnownActions = Math.Max(_KnownActions, action);
             }
             return (uint)action;
+        }
+
+        // ── checkpoints ──
+
+        public override bool SupportsCheckpoints { get { return true; } }
+        public override void SaveCheckpoint(BinaryWriter writer)
+        {
+            writer.Write(CheckpointVersion);
+            writer.Write(_MaxActions);
+            writer.Write(_KnownActions);
+        }
+        public override void LoadCheckpoint(BinaryReader reader)
+        {
+            int version = reader.ReadInt32();
+            int maxActions = reader.ReadInt32();
+            if (maxActions != _MaxActions)
+            {
+                throw new InvalidDataException("The checkpoint's action space has " + maxActions + " actions; this one has " + _MaxActions + ".");
+            }
+            _KnownActions = reader.ReadInt32();
         }
     }
 }

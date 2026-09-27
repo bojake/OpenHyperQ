@@ -414,6 +414,7 @@ namespace HuntTheWumpus
                         };
                         s.Add(_Q[i]);
                     }
+                    ApplyPendingLoad();
                     IMACEPvEEnv<T, ScalarReward> env = (IMACEPvEEnv<T, ScalarReward>)World;
                     if (args.memory_size > 0)
                     {
@@ -567,14 +568,58 @@ namespace HuntTheWumpus
             OnRunComplete?.Invoke();
         }
 
+        private string _PendingLoad = null;
+
+        /// <summary>
+        /// Saves the minds (learners and stateful selectors) as a HyperQ checkpoint. A name ending in .gz is
+        /// written compressed; any other name gets .gz appended.
+        /// </summary>
         public void Save(string fname)
         {
-            throw new NotSupportedException("Wumpus checkpoints need a typed .NET 10 serializer. BinaryFormatter has been removed from the OSS build.");
+            if (_Q == null)
+            {
+                Console.WriteLine("Nothing to save: the minds have not been created yet.");
+                return;
+            }
+            string path = fname.EndsWith(".gz", StringComparison.OrdinalIgnoreCase) ? fname : fname + ".gz";
+            MACECheckpoint.SaveFile(path, _Q);
+            Console.WriteLine("Saved the checkpoint of {0} minds to {1}", _Q.Length, path);
         }
 
+        /// <summary>
+        /// Schedules a checkpoint to be restored into the minds once Run has created them from the options: a
+        /// checkpoint holds learned state, not the learner configuration.
+        /// </summary>
         public void Load(string fname)
         {
-            throw new NotSupportedException("Wumpus checkpoints need a typed .NET 10 serializer. BinaryFormatter has been removed from the OSS build.");
+            if (!File.Exists(fname) && File.Exists(fname + ".gz"))
+            {
+                fname += ".gz";
+            }
+            if (!File.Exists(fname))
+            {
+                Console.WriteLine("Checkpoint {0} does not exist. Ignoring.", fname);
+                return;
+            }
+            _PendingLoad = fname;
+        }
+
+        private void ApplyPendingLoad()
+        {
+            if (_PendingLoad == null || _Q == null)
+            {
+                return;
+            }
+            try
+            {
+                MACECheckpoint.LoadFile(_PendingLoad, _Q);
+                Console.WriteLine("Loaded the Q state from {0}", _PendingLoad);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OOPS, {0} could not be loaded into the configured learners ({1}). Ignoring.", _PendingLoad, ex.Message);
+            }
+            _PendingLoad = null;
         }
 
         // int epStep, int warmup_episodes = 0, int memory_size = 500, int dyna_size = 200, bool use_negpos_memory = false, double dyna_freq = 0.2, QEvalType evalType = QEvalType.OffPolicy, int max_training_steps = 500, bool use_episodic_memory = false

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace HyperQ.Util
 {
@@ -85,6 +86,38 @@ namespace HyperQ.Util
         public override uint ToIndex(T action)
         {
             return _ActionMap.ToIndex(action);
+        }
+
+        // ── checkpoints ──
+
+        /// <summary>
+        /// Serializer for the action keys in checkpoints. Override it for an action type without a built-in
+        /// serializer (see <see cref="QKeySerializerFactory"/>).
+        /// </summary>
+        protected virtual IQKeySerializer<T> ActionKeySerializer { get { return QKeySerializerFactory.GetDefault<T>(); } }
+
+        public override bool SupportsCheckpoints { get { return _ActionMap is IndexMapper<T>; } }
+
+        public override void SaveCheckpoint(BinaryWriter writer)
+        {
+            IndexMapper<T> map = _ActionMap as IndexMapper<T>;
+            if (map == null)
+            {
+                throw new NotSupportedException("Only a memory backed action map can be written to a checkpoint.");
+            }
+            writer.Write(CheckpointVersion);
+            map.SaveCheckpoint(writer, ActionKeySerializer);
+        }
+
+        public override void LoadCheckpoint(BinaryReader reader)
+        {
+            IndexMapper<T> map = _ActionMap as IndexMapper<T>;
+            if (map == null)
+            {
+                throw new NotSupportedException("Only a memory backed action map can be restored from a checkpoint.");
+            }
+            int version = reader.ReadInt32();
+            map.LoadCheckpoint(reader, ActionKeySerializer);
         }
     }
 }
