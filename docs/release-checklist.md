@@ -7,7 +7,7 @@ This project is close enough for an initial FOSS source release if the release i
 - Confirm package and repository names.
 - Decide whether this repository is source-only or will publish NuGet packages.
 - Add a short `CONTRIBUTING.md` if external PRs are expected.
-- Add CI that runs `dotnet build HyperQ.OSS.sln` and `dotnet test tests/HyperQ.Tests/HyperQ.Tests.csproj`.
+- Run `tools/ci.ps1` before every push: it builds `HyperQ.OSS.sln` and runs every test (there is no hosted CI).
 - Keep the README checkpoint limitation visible.
 
 ## Should Do Soon

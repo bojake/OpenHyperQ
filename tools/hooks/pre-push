@@ -1,0 +1,8 @@
+#!/bin/sh
+# Pre-push gate: runs tools/ci.ps1 and blocks the push when the build or a test fails.
+# Enable it in a clone with:  git config core.hooksPath tools/hooks
+root="$(git rev-parse --show-toplevel)" || exit 1
+if command -v pwsh >/dev/null 2>&1; then
+    exec pwsh -NoProfile -File "$root/tools/ci.ps1"
+fi
+exec powershell.exe -NoProfile -File "$root/tools/ci.ps1"

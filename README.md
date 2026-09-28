@@ -40,6 +40,14 @@ This tree is suitable for an initial source release, but should be presented as 
 dotnet build HyperQ.OSS.sln
 ```
 
+## Test
+
+`tools/ci.ps1` builds the solution and runs every test, and exits non-zero if anything fails. There is no hosted CI, so run it before every push; `git config core.hooksPath tools/hooks` makes it a pre-push hook.
+
+```powershell
+./tools/ci.ps1
+```
+
 ## Run Samples
 
 ```powershell
