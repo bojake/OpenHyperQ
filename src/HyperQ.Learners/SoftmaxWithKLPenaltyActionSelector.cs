@@ -40,14 +40,13 @@ namespace HyperQ.Learners
 
             // Snapshot the current probabilities; every write below renormalizes the others.
             ICollection<int> keys = softmax.Keys.ToList();
-            Dictionary<int, double> p = keys.ToDictionary(k => k, k => softmax[k]);
+            Dictionary<int, double> p = keys.ToDictionary(k => k, k => softmax.Probability(k));
             foreach (int idx in keys)
             {
                 // gradient of D_KL(p||p_ref) = log(p/p_ref) + 1
                 double klGrad = Math.Log(p[idx] / _uniformRef) + 1.0;
-                // subtract a small step in direction of reducing KL, against the logit: the indexer reads
-                // back the probability, so "softmax[idx] -= step" replaced the logit with p - step.
-                softmax[idx] = softmax.Logit(idx) - hp.Alpha * KlCoef * klGrad;
+                // subtract a small step on the logit in the direction that reduces KL
+                softmax[idx] -= hp.Alpha * KlCoef * klGrad;
             }
         }
     }

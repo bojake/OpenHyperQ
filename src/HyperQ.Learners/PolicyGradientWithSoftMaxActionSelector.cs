@@ -94,19 +94,17 @@ namespace HyperQ.Learners
             int n = (int)_actionSpace.MaximumNumberOfActions;
             double[] p = new double[n];
             for (int i = 0; i < n; i++)
-                p[i] = softmax[i];
-            // update all actions
-            // NOTE: the RunningSoftMax indexer reads back the probability but sets the logit, so the step has
-            // to be written against Logit(i); "softmax[i] += delta" replaced the logit with p(i) + delta.
+                p[i] = softmax.Probability(i);
+            // update all actions; the indexer reads and writes the logit
             for (int i = 0; i < n; i++)
             {
                 if (i == a.Index)
                 {
-                    softmax[i] = softmax.Logit(i) + hp.Alpha * advantage * (1.0 - p[i]);
+                    softmax[i] += hp.Alpha * advantage * (1.0 - p[i]);
                 }
                 else
                 {
-                    softmax[i] = softmax.Logit(i) - hp.Alpha * advantage * p[i];
+                    softmax[i] -= hp.Alpha * advantage * p[i];
                 }
             }
         }
@@ -121,7 +119,7 @@ namespace HyperQ.Learners
                 double p_max = -1.0;
                 for (uint a = 0; a < _actionSpace.NumberOfKnownActions; a++)
                 {
-                    double p = rl[(int)a];
+                    double p = rl.Probability((int)a);
                     if (p > p_max)
                     {
                         p_max = p;
@@ -137,7 +135,7 @@ namespace HyperQ.Learners
                 double p_min = 1.0;
                 for (uint a = 0; a < _actionSpace.NumberOfKnownActions; a++)
                 {
-                    double p = rl[(int)a];
+                    double p = rl.Probability((int)a);
                     if (p < p_min)
                     {
                         p_min = p;
@@ -154,7 +152,7 @@ namespace HyperQ.Learners
                 double cumulative = 0.0;
                 for (uint a = 0; a < _actionSpace.NumberOfKnownActions; a++)
                 {
-                    double p = softmax[(int)a];
+                    double p = softmax.Probability((int)a);
                     cumulative += p;
                     if (roll < cumulative)
                     {

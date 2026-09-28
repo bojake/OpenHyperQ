@@ -70,19 +70,17 @@ namespace HyperQ.Learners
             double objective = logit.Objective((int)a.Index, advantage, hp.Omega);
             // Softmax policy gradient: d log pi(a)/d theta_a = 1 - pi(a) and d log pi(a)/d theta_i = -pi(i).
             // The gradient is taken at the policy before this step, so snapshot the probabilities first.
-            // NOTE: the RunningLogit indexer reads back the probability but sets the logit, so the step has
-            // to be written against Logit(i); "logit[i] += delta" replaced the logit with p(i) + delta, which
-            // pinned every logit into [0,1] and kept the policy near uniform forever.
+            // The indexer reads and writes the logit, so each step is a plain += on it.
             RunningNormalizer priors = logit.LockPriors();
             int taken = (int)a.Index;
             double g = (1.0 - priors[taken]) * objective; // This should be cumulative
-            logit[taken] = logit.Logit(taken) + hp.Alpha * g;
+            logit[taken] += hp.Alpha * g;
             // -p*Objective is the counter update
             foreach(int i in priors.Keys)
             {
                 if (i == taken)
                     continue;
-                logit[i] = logit.Logit(i) - hp.Alpha * priors[i] * objective * hp.PenaltyAnnealingFactor;
+                logit[i] -= hp.Alpha * priors[i] * objective * hp.PenaltyAnnealingFactor;
             }
         }
         public virtual double LastActionProbability { 
@@ -147,7 +145,7 @@ namespace HyperQ.Learners
                 double p_max = -1.0;
                 for (uint a = 0; a < _actionSpace.NumberOfKnownActions; a++)
                 {
-                    double p = rl[(int)a];
+                    double p = rl.Probability((int)a);
                     if (p > p_max)
                     {
                         p_max = p;
@@ -163,7 +161,7 @@ namespace HyperQ.Learners
                 double p_min = 1.0;
                 for (uint a = 0; a < _actionSpace.NumberOfKnownActions; a++)
                 {
-                    double p = rl[(int)a];
+                    double p = rl.Probability((int)a);
                     if (p < p_min)
                     {
                         p_min = p;
@@ -179,7 +177,7 @@ namespace HyperQ.Learners
                 double cumulative = 0f;
                 for (uint a = 0; a < _actionSpace.NumberOfKnownActions; a++)
                 {
-                    double p = rl[(int)a];
+                    double p = rl.Probability((int)a);
                     cumulative += p;
                     if (roll < cumulative)
                     {

@@ -183,6 +183,8 @@ namespace HyperQ.Test
                 Assert.AreEqual(prob1, restored.Probability(1), 1e-10, "Probability[1] should match");
                 Assert.AreEqual(prob2, restored.Probability(2), 1e-10, "Probability[2] should match");
                 Assert.AreEqual(prob3, restored.Probability(3), 1e-10, "Probability[3] should match");
+                for (int i = 0; i < 4; i++)
+                    Assert.AreEqual(logit[i], restored[i], $"Logit[{i}] should match");
             }
         }
 

@@ -47,9 +47,8 @@ namespace HyperQ.Learners
                 // gradient of D_KL(p||p_ref) = log(p/p_ref) + 1
                 double klGrad = Math.Log(p / _uniformRef);// + 1.0;
                 // double klGrad = p - _uniformRef;
-                // subtract a small step in direction of reducing KL, against the logit: the indexer reads
-                // back the probability, so "logits[idx] -= step" replaced the logit with p - step.
-                logits[idx] = logits.Logit(idx) - hp.Alpha * KlCoef * klGrad;
+                // subtract a small step on the logit in the direction that reduces KL
+                logits[idx] -= hp.Alpha * KlCoef * klGrad;
             }
         }
     }
