@@ -29,7 +29,8 @@ namespace HyperQ.Learners
             {
                 DefaultValueFunc = defaultValueAction;
             }
-            _random = ran ?? QRandom.Instance;
+            // Decides which table an update goes to.
+            _random = ran ?? actionSpace.Random;
         }
         public override double[,] AsMatrix
         {
@@ -160,7 +161,7 @@ namespace HyperQ.Learners
 
         public override Q<T> Clone()
         {
-            MappedQQ<T> c = new MappedQQ<T>(ActionSpace.Clone(), DefaultValueFunc);
+            MappedQQ<T> c = new MappedQQ<T>(ActionSpace.Clone(), DefaultValueFunc, _random);
             c._Q1 = _Q1.Clone() as MappedQ<T>;
             c._Q2 = _Q2.Clone() as MappedQ<T>;
             return (c);

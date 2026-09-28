@@ -17,11 +17,11 @@ namespace LEM
         public QQLEMRunner(int numepisodes, HyperParams h = null) : base(numepisodes,h) { }
         protected override Q<decimal> CreateLearner(QActionSpace<int> actionSpace)
         {
-            return new MappedQQ<decimal>(actionSpace, QRandom.Instance.DefaultRandomAction, ran: QRandom.Instance);
+            return new MappedQQ<decimal>(actionSpace, _Random.DefaultRandomAction, ran: _Random);
         }
         protected override LEMBaseGameEnv CreateWorld()
         {
-            LEMGameEnv world = new LEMGameEnv(ran: QRandom.Instance.Ran, quiet: Quiet, stepduration: StepDuration);
+            LEMGameEnv world = new LEMGameEnv(ran: _Random.Ran, quiet: Quiet, stepduration: StepDuration);
             world.Metrics = new EnvMetrics(false);
             return (world);
         }
@@ -31,11 +31,11 @@ namespace LEM
         public HyperQQLEMRunner(int numepisodes, HyperParams h = null) : base(numepisodes,h) { }
         protected override Q<QState<decimal>> CreateLearner(QActionSpace<int> actionSpace)
         {
-            return new DoubleHyperQ<decimal>(actionSpace, QRandom.Instance.DefaultRandomAction, ran: QRandom.Instance);
+            return new DoubleHyperQ<decimal>(actionSpace, _Random.DefaultRandomAction, ran: _Random);
         }
         protected override LEMBaseGameEnv CreateWorld()
         {
-            LEMHyperGameEnv world = new LEMHyperGameEnv(ran: QRandom.Instance.Ran, quiet: Quiet, stepduration: StepDuration);
+            LEMHyperGameEnv world = new LEMHyperGameEnv(ran: _Random.Ran, quiet: Quiet, stepduration: StepDuration);
             world.Metrics = new EnvMetrics(false);
             return (world);
         }
@@ -45,11 +45,11 @@ namespace LEM
         public QLEMRunner(int numepisodes, HyperParams h = null) : base(numepisodes,h) { }
         protected override Q<decimal> CreateLearner(QActionSpace<int> actionSpace)
         {
-            return new MappedQ<decimal>(actionSpace, QRandom.Instance.DefaultRandomAction);
+            return new MappedQ<decimal>(actionSpace, _Random.DefaultRandomAction);
         }
         protected override LEMBaseGameEnv CreateWorld()
         {
-            LEMGameEnv world = new LEMGameEnv(ran: QRandom.Instance.Ran, quiet: Quiet, stepduration: StepDuration);
+            LEMGameEnv world = new LEMGameEnv(ran: _Random.Ran, quiet: Quiet, stepduration: StepDuration);
             world.Metrics = new EnvMetrics(false);
             return (world);
         }
@@ -59,11 +59,11 @@ namespace LEM
         public HyperQLEMRunner(int numepisodes, HyperParams h = null) : base(numepisodes,h) { }
         protected override Q<QState<decimal>> CreateLearner(QActionSpace<int> actionSpace)
         {
-            return new SingleHyperQ<decimal>(actionSpace, QRandom.Instance.DefaultRandomAction);
+            return new SingleHyperQ<decimal>(actionSpace, _Random.DefaultRandomAction);
         }
         protected override LEMBaseGameEnv CreateWorld()
         {
-            LEMHyperGameEnv world = new LEMHyperGameEnv(ran: QRandom.Instance.Ran, quiet: Quiet, stepduration: StepDuration);
+            LEMHyperGameEnv world = new LEMHyperGameEnv(ran: _Random.Ran, quiet: Quiet, stepduration: StepDuration);
             world.Metrics = new EnvMetrics(false);
             return (world);
         }
@@ -73,12 +73,12 @@ namespace LEM
         public LayeredHyperQLEMRunner(int numepisodes, HyperParams h = null) : base(numepisodes,h) { }
         protected override Q<QState<decimal>> CreateLearner(QActionSpace<int> actionSpace)
         {
-            SingleQGenerator<decimal> g = new SingleQGenerator<decimal>(actionSpace, QRandom.Instance.DefaultRandomAction);
-            return new LayeredHyperQ<decimal>(g.HyperQGenerator, actionSpace, QRandom.Instance.DefaultRandomAction);
+            SingleQGenerator<decimal> g = new SingleQGenerator<decimal>(actionSpace, _Random.DefaultRandomAction);
+            return new LayeredHyperQ<decimal>(g.HyperQGenerator, actionSpace, _Random.DefaultRandomAction);
         }
         protected override LEMBaseGameEnv CreateWorld()
         {
-            LEMHyperGameEnv world = new LEMHyperGameEnv(ran: QRandom.Instance.Ran, quiet: Quiet, stepduration: StepDuration);
+            LEMHyperGameEnv world = new LEMHyperGameEnv(ran: _Random.Ran, quiet: Quiet, stepduration: StepDuration);
             world.Metrics = new EnvMetrics(false);
             return (world);
         }
@@ -88,12 +88,12 @@ namespace LEM
         public LayeredHyperQQLEMRunner(int numepisodes, HyperParams h = null) : base(numepisodes,h) { }
         protected override Q<QState<decimal>> CreateLearner(QActionSpace<int> actionSpace)
         {
-            DoubleQGenerator<decimal> g = new DoubleQGenerator<decimal>(actionSpace, QRandom.Instance.DefaultRandomAction, ran: QRandom.Instance);
-            return new LayeredHyperQ<decimal>(g.HyperGenerator, actionSpace, QRandom.Instance.DefaultRandomAction);
+            DoubleQGenerator<decimal> g = new DoubleQGenerator<decimal>(actionSpace, _Random.DefaultRandomAction, ran: _Random);
+            return new LayeredHyperQ<decimal>(g.HyperGenerator, actionSpace, _Random.DefaultRandomAction);
         }
         protected override LEMBaseGameEnv CreateWorld()
         {
-            LEMHyperGameEnv world = new LEMHyperGameEnv(ran: QRandom.Instance.Ran, quiet: Quiet, stepduration: StepDuration);
+            LEMHyperGameEnv world = new LEMHyperGameEnv(ran: _Random.Ran, quiet: Quiet, stepduration: StepDuration);
             world.Metrics = new EnvMetrics(false);
             return (world);
         }
@@ -238,10 +238,15 @@ namespace LEM
         public HyperParams Hypers { get; set; } = new HyperParams(g: 0.997, e: .5, a: 0.7, edecay: 0.999991, adecay: 0.999991, min_epsilon: 0.05, min_alpha: 0.1, tau: 0.95);
         public PvESARSATrainer<T> Model { get; private set; }
 
+        /// <summary>
+        /// The run's random source: the action spaces, learners, world, trainer and memory draw from it, so a
+        /// run is reproducible from this seed.
+        /// </summary>
+        protected readonly QRandom _Random = new QRandom(903387237);
+
         public LEMRunner(int numepisodes, HyperParams h = null)
         {
             NumEpisodes = numepisodes;
-            QRandom.Instance.Seed(903387237);
             if (h != null)
             {
                 Hypers = h;
@@ -342,7 +347,7 @@ namespace LEM
                         World.Reset();
                         Console.WriteLine("Created the simulation world.");
                     }
-                    LEMActionSpace ras = new LEMActionSpace(QRandom.Instance, (int)World.NumActions);
+                    LEMActionSpace ras = new LEMActionSpace(_Random, (int)World.NumActions);
                     if (_Q == null)
                     {
                         _Q = CreateLearner(ras);
@@ -360,23 +365,23 @@ namespace LEM
                         selector = new PolicyGradientWithSoftmaxActionSelector<T>(ras);
                     else if (args.actionModel == ActionSelectionModel.SoftMax_KL)
                         selector = new SoftmaxWithKLPenaltyActionSelector<T>(ras, klCoef: 0.1);
-                    PvESARSATrainer<T> s = new PvESARSATrainer<T>(_Q, evalType, selector, QRandom.Instance);
+                    PvESARSATrainer<T> s = new PvESARSATrainer<T>(_Q, evalType, selector, _Random);
                     if (args.memory_size > 0)
                     {
                         QMemory<T, HyperQ.Util.ScalarReward> mem = null;
                         if (args.episodic)
                         {
                             if (args.use_negpos_memory)
-                                mem = new QEpisodicNegPosMemory<T>(args.memory_size, QRandom.Instance);
+                                mem = new QEpisodicNegPosMemory<T>(args.memory_size, _Random);
                             else
-                                mem = new QEpisodicMemory<T>(args.memory_size, QRandom.Instance);
+                                mem = new QEpisodicMemory<T>(args.memory_size, _Random);
                         }
                         else
                         {
                             if (args.use_negpos_memory)
-                                mem = new QNegPosMemory<T>(args.memory_size, QRandom.Instance);
+                                mem = new QNegPosMemory<T>(args.memory_size, _Random);
                             else
-                                mem = new QMemory<T>(args.memory_size, QRandom.Instance);
+                                mem = new QMemory<T>(args.memory_size, _Random);
                         }
                         s.EnableMemory(mem);
                     }

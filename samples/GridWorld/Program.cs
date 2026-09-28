@@ -9,7 +9,7 @@ namespace HyperQ.Samples.GridWorld
     {
         private static void Main()
         {
-            QRandom random = QRandom.Instance.Seed(0);
+            QRandom random = new QRandom(0);
             GridWorld world = new GridWorld(6, 6, random);
             GridWorldMappedActionSpace actions = new GridWorldMappedActionSpace(random);
             ClassicQ q = new ClassicQ(actions);

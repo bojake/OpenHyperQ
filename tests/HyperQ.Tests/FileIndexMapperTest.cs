@@ -141,10 +141,10 @@ namespace HyperQ.Test
                 }
             }
 
-            QRandom.Instance.Seed(12345);
+            QRandom ran = new QRandom(12345);
             for (int i = 0; i < 200; i++)
             {
-                uint idx = mapper.RandomKey(QRandom.Instance);
+                uint idx = mapper.RandomKey(ran);
                 Assert.IsTrue(expected.Contains(idx), $"Random key returned removed or unknown index {idx}.");
                 Assert.IsTrue(mapper.IsKnownIndex(idx), $"Random key returned index {idx} that is not known.");
                 int key = mapper.FromIndex(idx);

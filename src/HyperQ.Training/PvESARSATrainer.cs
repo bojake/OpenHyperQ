@@ -48,13 +48,15 @@ namespace HyperQ.Training
         private List<Tuple<T, QAction, T, QAction, ScalarReward>> _Episode = new List<Tuple<T, QAction, T, QAction, ScalarReward>>();
         protected Q<T> _Q;
         public IActionSelector<T> ActionSelector { get; set; } = null;
-        protected QRandom _random = QRandom.Instance;
+        protected QRandom _random;
         public int MaxIterations { get; set; } = 0;
 
+        /// <param name="ran">The source of the trainer's own draws (Dyna, memory replay); the learner's action
+        /// space's when null.</param>
         public PvESARSATrainer(Q<T> q, QEvalType evalType = QEvalType.OnPolicy, IActionSelector<T> actionSelector = null, QRandom ran = null)
         {
-            _Q = q;
-            _random = ran ?? QRandom.Instance;
+            _Q = q ?? throw new ArgumentNullException(nameof(q));
+            _random = ran ?? q.ActionSpace.Random;
             ActionSelector = actionSelector;
             if (ActionSelector == null)
             {

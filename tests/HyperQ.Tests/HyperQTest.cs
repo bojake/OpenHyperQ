@@ -18,7 +18,7 @@ namespace HyperQ.Test
         }
         private IHyperQ<decimal> MakeSingleQ()
         {
-            IHyperQ<decimal> q1 = new SingleHyperQ<decimal>(new QOrdinalActionSpace(QRandom.Instance,10));
+            IHyperQ<decimal> q1 = new SingleHyperQ<decimal>(new QOrdinalActionSpace(new QRandom(0),10));
             q1.SetValue(newQState(10), 1, 5.0);
             q1.SetValue(newQState(10), 1, 7.0);
             q1.SetValue(newQState(7), 2, 9.0);
@@ -44,7 +44,7 @@ namespace HyperQ.Test
 
         private IHyperQ<decimal> MakeDoubleQ()
         {
-            IHyperQ<decimal> q1 = new DoubleHyperQ<decimal>(new QOrdinalActionSpace(QRandom.Instance, 10));
+            IHyperQ<decimal> q1 = new DoubleHyperQ<decimal>(new QOrdinalActionSpace(new QRandom(0), 10));
             q1.SetValue(newQState(10), 1, 5.0);
             q1.SetValue(newQState(10), 1, 7.0);
             q1.SetValue(newQState(7), 2, 9.0);
@@ -71,11 +71,11 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestCtor()
         {
-            IHyperQ<decimal> q = new SingleHyperQ<decimal>(new QOrdinalActionSpace(QRandom.Instance, 10));
+            IHyperQ<decimal> q = new SingleHyperQ<decimal>(new QOrdinalActionSpace(new QRandom(0), 10));
             Assert.IsNotNull(q);
             Assert.AreEqual(10u, q.ActionSpace.MaximumNumberOfActions);
             Assert.AreEqual(0u, q.ActionSpace.NumberOfKnownActions);
-            q = new DoubleHyperQ<decimal>(new QOrdinalActionSpace(QRandom.Instance, 10));
+            q = new DoubleHyperQ<decimal>(new QOrdinalActionSpace(new QRandom(0), 10));
             Assert.IsNotNull(q);
             Assert.AreEqual(10u, q.ActionSpace.MaximumNumberOfActions);
             Assert.AreEqual(0u, q.ActionSpace.NumberOfKnownActions);
@@ -83,10 +83,10 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestSetGetValue()
         {
-            IHyperQ<decimal> q = new SingleHyperQ<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
+            IHyperQ<decimal> q = new SingleHyperQ<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
             q.SetValue(newQState(10), 1, 5.0);
             Assert.AreEqual(5.0, q.GetValue(newQState(10), 1));
-            q = new DoubleHyperQ<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
+            q = new DoubleHyperQ<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
             q.SetValue(newQState(10), 1, 5.0);
             // Alt-Q has zero for this state, so 0.5 * (0 + 5) = 2.5, expected value
             Assert.AreEqual(2.5, q.GetValue(newQState(10), 1));
@@ -94,9 +94,9 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestMergeMax()
         {
-            IHyperQ<decimal> q1 = new SingleHyperQ<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
+            IHyperQ<decimal> q1 = new SingleHyperQ<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
             q1.SetValue(newQState(10), 1, 5.0);
-            IHyperQ<decimal> q2 = new SingleHyperQ<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
+            IHyperQ<decimal> q2 = new SingleHyperQ<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
             q2.SetValue(newQState(10), 1, 7.0);
             q2.SetValue(newQState(7), 2, 9.0);
             // Test Merge MAX
@@ -113,7 +113,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestClone()
         {
-            IHyperQ<decimal> q1 = new SingleHyperQ<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
+            IHyperQ<decimal> q1 = new SingleHyperQ<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
             q1.SetValue(newQState(1), 5, 1.0);
             q1.SetValue(newQState(2), 3, 2.0);
             q1.SetValue(newQState(3), 9, 3.0);
@@ -175,7 +175,7 @@ namespace HyperQ.Test
         /// </summary>
         private static StaticMappedActionSpace ReverseMappedSpace(uint n)
         {
-            StaticMappedActionSpace space = new StaticMappedActionSpace(QRandom.Instance, n);
+            StaticMappedActionSpace space = new StaticMappedActionSpace(new QRandom(0), n);
             for (int a = (int)n - 1; a >= 0; a--)
             {
                 space.ToIndex(a);
@@ -303,7 +303,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestShape()
         {
-            IHyperQ<decimal> c = new SingleHyperQ<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
+            IHyperQ<decimal> c = new SingleHyperQ<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
             Assert.IsNotNull(c);
             c.SetValue(newQState(2), 3, 2.0);
             Assert.AreEqual(1u, c.Shape.Item1);
@@ -313,7 +313,7 @@ namespace HyperQ.Test
             Assert.AreEqual(2u, c.Shape.Item1);
             Assert.AreEqual(2u, c.Shape.Item2);
 
-            c = new DoubleHyperQ<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
+            c = new DoubleHyperQ<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
             Assert.IsNotNull(c);
             c.SetValue(newQState(2), 3, 2.0);
             Assert.AreEqual(1u, c.Shape.Item1);
@@ -327,7 +327,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestSingleHyperQArgMaxFindsGlobalMaximumNotFirstIncrease()
         {
-            var q = new SingleHyperQ<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
+            var q = new SingleHyperQ<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
             var s = newQState(999);
 
             q.SetValue(s, 1, 5.0);
@@ -343,7 +343,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestSingleHyperQArgMinFindsGlobalMinimumNotFirstDecrease()
         {
-            var q = new SingleHyperQ<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
+            var q = new SingleHyperQ<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
             var s = newQState(1000);
 
             q.SetValue(s, 1, 5.0);
@@ -368,7 +368,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestDoubleHyperQNextQExplicitSelection()
         {
-            var q = new DoubleHyperQ<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
+            var q = new DoubleHyperQ<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
 
             q.NextQ(0);
             var q0 = q.CurrentQ();

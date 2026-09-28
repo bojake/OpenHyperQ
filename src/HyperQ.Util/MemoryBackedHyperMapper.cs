@@ -16,15 +16,25 @@ namespace HyperQ.Util
     {
         private IIndexMapper<T> _Final;
         private Dictionary<T, MemoryBackedHyperMapper<T>> _Sub;
+        private readonly IndexRepo _Repo;
         private bool IsEmpty => (_Final == null || _Final.MappingCount == 0) && (_Sub == null || _Sub.Count == 0);
 
+        /// <summary>
+        /// Creates a mapper whose every level draws its indexes from <paramref name="repo"/>, or from a
+        /// repository of its own when none is given. The levels share one repository because the indexes of
+        /// all the states mapped anywhere in the tree address the rows of one table.
+        /// </summary>
         public MemoryBackedHyperMapper(IndexRepo repo = null)
         {
-            if (repo != null)
-            {
-                _Final = new IndexMapper<T>();
-                _Final.Repo = repo;
-            }
+            _Repo = repo ?? new IndexRepo();
+        }
+
+        /// <summary>
+        /// The repository every level of this mapper draws its indexes from.
+        /// </summary>
+        public IndexRepo Repo
+        {
+            get { return _Repo; }
         }
 
         public T From(uint index)
@@ -52,7 +62,7 @@ namespace HyperQ.Util
 
         public MemoryBackedHyperMapper<T> Clone()
         {
-            MemoryBackedHyperMapper<T> h = new MemoryBackedHyperMapper<T>();
+            MemoryBackedHyperMapper<T> h = new MemoryBackedHyperMapper<T>(_Repo);
             if (_Final != null)
             {
                 h._Final = _Final.Clone();
@@ -259,7 +269,7 @@ namespace HyperQ.Util
             {
                 if (_Final == null)
                 {
-                    _Final = new IndexMapper<T>();
+                    _Final = new IndexMapper<T>(_Repo);
                 }
                 return _Final[key];
             }
@@ -274,7 +284,7 @@ namespace HyperQ.Util
                 var k = e.Value;
                 if (map._Sub == null) map._Sub = new Dictionary<T, MemoryBackedHyperMapper<T>>();
                 if (!map._Sub.TryGetValue(k, out var next))
-                    map._Sub[k] = next = new MemoryBackedHyperMapper<T>(map._Final?.Repo);
+                    map._Sub[k] = next = new MemoryBackedHyperMapper<T>(map._Repo);
                 map = next;
                 e.MoveNext();
             }
@@ -338,11 +348,11 @@ namespace HyperQ.Util
                 if (map._Sub == null) map._Sub = new Dictionary<T, MemoryBackedHyperMapper<T>>();
                 MemoryBackedHyperMapper<T> next;
                 if (!map._Sub.TryGetValue(k, out next))
-                    map._Sub[k] = next = new MemoryBackedHyperMapper<T>(map._Final?.Repo);
+                    map._Sub[k] = next = new MemoryBackedHyperMapper<T>(map._Repo);
                 map = next;
                 e.MoveNext();
             }
-            if (map._Final == null) map._Final = new IndexMapper<T>();
+            if (map._Final == null) map._Final = new IndexMapper<T>(map._Repo);
             IndexMapper<T> final = map._Final as IndexMapper<T>;
             if (final == null)
                 throw new NotSupportedException("Only memory backed index mappers can be restored from a checkpoint.");

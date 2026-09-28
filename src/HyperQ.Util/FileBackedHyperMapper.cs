@@ -22,16 +22,28 @@ namespace HyperQ.Util
         // index files.
         private string _BaseFileName;
         private int _Level = 1;
+        private readonly IndexRepo _Repo;
         private bool IsEmpty => (_Final == null || _Final.MappingCount == 0) && (_Sub == null || _Sub.Count == 0);
 
+        /// <summary>
+        /// Creates a mapper whose every level draws its indexes from <paramref name="repo"/>, or from a
+        /// repository of its own when none is given; the levels share one repository because the indexes of all
+        /// the states mapped in the tree address the rows of one table. Given a repository, the mapper opens
+        /// this level's files at once; otherwise when the first key ends at this level.
+        /// </summary>
         public FileBackedHyperMapper(IndexRepo repo = null, string memoryFileName="hyperqindexmapper", int level = 1)
+            : this(repo ?? new IndexRepo(), memoryFileName, level, repo != null)
         {
+        }
+
+        private FileBackedHyperMapper(IndexRepo repo, string memoryFileName, int level, bool openLevel)
+        {
+            _Repo = repo;
             _BaseFileName = memoryFileName;
             _Level = level;
-            if (repo != null)
+            if (openLevel)
             {
-                _Final = new FileIndexMapper<T>($"{_BaseFileName}L{_Level}");
-                _Final.Repo = repo;
+                _Final = new FileIndexMapper<T>($"{_BaseFileName}L{_Level}", repo: _Repo);
             }
         }
 
@@ -62,7 +74,7 @@ namespace HyperQ.Util
         {
             // Preserve the current level so that any cloned mapper continues to
             // generate file names that match the original hierarchy.
-            FileBackedHyperMapper<T> h = new FileBackedHyperMapper<T>(_Final?.Repo, _BaseFileName, _Level);
+            FileBackedHyperMapper<T> h = new FileBackedHyperMapper<T>(_Repo, _BaseFileName, _Level, false);
             if (_Final != null)
             {
                 h._Final = _Final.Clone();
@@ -211,7 +223,7 @@ namespace HyperQ.Util
                     // Each mapper writes to its own index files.  The base file
                     // name is unique per mapper instance, so combine it with the
                     // current level to create the final mapping file.
-                    _Final = new FileIndexMapper<T>($"{_BaseFileName}L{_Level}");
+                    _Final = new FileIndexMapper<T>($"{_BaseFileName}L{_Level}", repo: _Repo);
                 }
                 return _Final[key];
             }
@@ -257,7 +269,7 @@ namespace HyperQ.Util
                     // sibling branches from sharing the same backing files and
                     // ensures indices remain unique per state path.
                     string subBase = BuildSubMapperBase(map._BaseFileName, k);
-                    map._Sub[k] = next = new FileBackedHyperMapper<T>(map._Final?.Repo, subBase, map._Level + 1);
+                    map._Sub[k] = next = new FileBackedHyperMapper<T>(map._Repo, subBase, map._Level + 1, map._Final != null);
                 }
                 map = next;
                 e.MoveNext();

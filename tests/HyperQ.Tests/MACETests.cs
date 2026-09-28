@@ -66,9 +66,9 @@ namespace HyperQ.Test
             // alpha = 1 and gamma = 0 make every SARSA update Q(s,a) = r, so the tables show exactly
             // which (s,a) pair was credited with each reward.
             HyperParams hp = new HyperParams(g: 0.0, e: 0.0, a: 1.0);
-            MappedQ<decimal> angle = new MappedQ<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
-            MappedQ<decimal> power = new MappedQ<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
-            MACEPvESARSATrainer<decimal, ScalarReward> trainer = new MACEPvESARSATrainer<decimal, ScalarReward>(QEvalType.OnPolicy);
+            MappedQ<decimal> angle = new MappedQ<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
+            MappedQ<decimal> power = new MappedQ<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
+            MACEPvESARSATrainer<decimal, ScalarReward> trainer = new MACEPvESARSATrainer<decimal, ScalarReward>(new QRandom(0), QEvalType.OnPolicy);
             trainer.Add(angle, new ScriptedSelector(3, 5, 7, 9));
             trainer.Add(power, new ScriptedSelector(2, 4, 6, 8));
             ScriptedMaceEnv env = new ScriptedMaceEnv();
@@ -192,7 +192,7 @@ namespace HyperQ.Test
         public void TestHallucinate()
         {
             QAction[] a = new QAction[3] { new QAction(0, 0.0, 0), new QAction(1, 0.0, 1), new QAction(2, 0.0, 2) };
-            QRandom ran = QRandom.Instance;
+            QRandom ran = new QRandom(0);
             DynaState<decimal, ScalarReward> ds1 = new DynaState<decimal, ScalarReward>(100, 3);
             Assert.AreEqual(3, ds1.HistoryCapacity);
             HyperParams hp = new HyperParams(1.0, 1.0, 0.5, 1.0, 1.0, 0.5, 1.0, 1.0);
@@ -212,7 +212,7 @@ namespace HyperQ.Test
         public void TestHallucinateWithQState()
         {
             QAction[] a = new QAction[3] { new QAction(0, 0.0, 0), new QAction(1, 0.0, 1), new QAction(2, 0.0, 2) };
-            QRandom ran = QRandom.Instance;
+            QRandom ran = new QRandom(0);
             HyperParams hp = new HyperParams(1.0, 1.0, 0.5, 1.0, 1.0, 0.5, 1.0, 1.0);
             DynaState<QState<decimal>,ScalarReward> ds1 = new DynaState<QState<decimal>, ScalarReward>(100, 3);
             Assert.AreEqual(3, ds1.HistoryCapacity);

@@ -20,13 +20,13 @@ namespace HyperQ.Test
 
         private IHyperQ<decimal> MakeSingleQ()
         {
-            IHyperQ<decimal> q1 = new SingleHyperQ<decimal>(new QOrdinalActionSpace(QRandom.Instance, 10));
+            IHyperQ<decimal> q1 = new SingleHyperQ<decimal>(new QOrdinalActionSpace(new QRandom(0), 10));
             return q1;
         }
 
         private IHyperQ<decimal> MakeDoubleQ()
         {
-            IHyperQ<decimal> q1 = new DoubleHyperQ<decimal>(new QOrdinalActionSpace(QRandom.Instance, 10));
+            IHyperQ<decimal> q1 = new DoubleHyperQ<decimal>(new QOrdinalActionSpace(new QRandom(0), 10));
             return q1;
         }
 
@@ -105,8 +105,8 @@ namespace HyperQ.Test
         {
             IHyperQ<decimal>[] heads = new IHyperQ<decimal>[]
             {
-                new SingleHyperQ<decimal>(new QOrdinalActionSpace(QRandom.Instance, 10)),
-                new SingleHyperQ<decimal>(new QOrdinalActionSpace(QRandom.Instance, 10))
+                new SingleHyperQ<decimal>(new QOrdinalActionSpace(new QRandom(0), 10)),
+                new SingleHyperQ<decimal>(new QOrdinalActionSpace(new QRandom(0), 10))
             };
             var q = new MultiHeadHyperQLearner<decimal>(heads, scalarizer: new LinearScalarizer(new double[] { 1.0, 1.0 }));
             Assert.AreEqual(2, q.HeadCount);

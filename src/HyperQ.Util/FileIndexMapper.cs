@@ -45,10 +45,10 @@ namespace HyperQ.Util
         /// </summary>
         private static readonly byte[] DataFileHeader = new byte[] { (byte)'H', (byte)'Q', (byte)'D', (byte)'1', 0, 0, 0, 0 };
         /// <summary>
-        /// List of the indices that are free when the keys are removed from the mapper. Default will
-        /// use the shared index repository.
+        /// Hands out the indexes and keeps the ones freed when keys are removed. The mapper's own unless one
+        /// was given to share.
         /// </summary>
-        private IndexRepo _indices = IndexRepo.Instance;
+        private IndexRepo _indices;
 
         /// <summary>
         /// Creates a new file backed index mapper.
@@ -61,9 +61,15 @@ namespace HyperQ.Util
         /// attempts to resolve a built-in serializer via <see cref="QKeySerializerFactory"/>.
         /// Pass an explicit instance for custom key types.
         /// </param>
+        /// <param name="repo">
+        /// The index repository to draw from, shared with the mappers whose indexes must not collide with
+        /// this one's (the levels of a <see cref="FileBackedHyperMapper{T}"/>). When null the mapper has a
+        /// repository of its own.
+        /// </param>
         public FileIndexMapper(string baseFile, int cacheSize = 1000, int flushThreshold = 10,
-            IQKeySerializer<T> keySerializer = null)
+            IQKeySerializer<T> keySerializer = null, IndexRepo repo = null)
         {
+            _indices = repo ?? new IndexRepo();
             _keySerializer = keySerializer ?? QKeySerializerFactory.GetDefault<T>();
             _basePath = baseFile;
             string dir = Path.GetDirectoryName(baseFile);
@@ -107,10 +113,10 @@ namespace HyperQ.Util
                 Console.WriteLine("Failed to create or open the memory mapped DAT file at {0} {1}", dataPath, ex.Message);
                 throw ex;
             }
-            // Only reset the shared index repository if the backing file already
-            // contains data.  Creating a new mapper with an empty file should not
-            // rewind the global index counter as that will cause index reuse
-            // across sibling mappers.
+            // Only move the index repository forward if the backing file already
+            // contains data. Creating a new mapper with an empty file must not
+            // rewind a repository it shares with sibling mappers, as that would
+            // reuse their indexes.
             uint next = (uint)Math.Min(_knownSlots, uint.MaxValue);
             if (next > 0 && next > _indices.Peek)
             {
@@ -612,8 +618,7 @@ namespace HyperQ.Util
             {
                 _lock.ExitWriteLock();
             }
-            FileIndexMapper<T> clone = new FileIndexMapper<T>(newBase, _cacheSize, _flushThreshold);
-            clone.Repo = _indices;
+            FileIndexMapper<T> clone = new FileIndexMapper<T>(newBase, _cacheSize, _flushThreshold, repo: _indices);
             foreach (var ep in _remotes)
             {
                 clone.AddRemote(ep);

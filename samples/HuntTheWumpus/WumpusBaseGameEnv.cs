@@ -88,8 +88,11 @@ namespace HuntTheWumpus
             _ran = ran;
             if (_ran == null)
             {
+                // A static world: its own source, restarted from the same seed on every reset, so every episode
+                // plays the same cave. (It used to reseed the process-wide source, which also rewound the
+                // learners' and selectors' draws at every reset.)
                 _resetSeed = 903387237;
-                _ran = QRandom.Instance.Seed(_resetSeed);
+                _ran = new QRandom(_resetSeed);
                 Console.WriteLine("CREATED WORLD WITH STATIC SEED {0}", _resetSeed);
             }
             if (dims == null)
@@ -116,7 +119,7 @@ namespace HuntTheWumpus
         {
             if (_resetSeed >= 0)
             {
-                _ran = QRandom.Instance.Seed(_resetSeed);
+                _ran.Seed(_resetSeed);
                 if (!Quiet)
                 {
                     Console.WriteLine("RESET WORLD WITH STATIC SEED {0}", _resetSeed);

@@ -10,13 +10,11 @@ namespace HyperQ.Util
     public class ProbeSequenceGenerator<TKey>
     {
         private int tableSize;
-        private Random random;
         private int[] distro;
 
         public ProbeSequenceGenerator(int size)
         {
             tableSize = size;
-            random = QRandom.Instance.Ran;
             distro = new int[size];
             for (int i = 0; i < size; i++)
             {

@@ -15,15 +15,15 @@ namespace HyperQ.Test
     {
         private Q<decimal> MakeQ()
         {
-            Q<decimal> q1 = new ClassicQ(new QOrdinalActionSpace(QRandom.Instance, 10));
+            Q<decimal> q1 = new ClassicQ(new QOrdinalActionSpace(new QRandom(0), 10));
             q1.SetValue(10, 1, 5.0);
-            Q<decimal> q2 = new ClassicQ(new QOrdinalActionSpace(QRandom.Instance, 10));
+            Q<decimal> q2 = new ClassicQ(new QOrdinalActionSpace(new QRandom(0), 10));
             q2.SetValue(10, 1, 7.0);
             q2.SetValue(7, 2, 9.0);
             // Test Merge MAX
             q1.MergeInto(q2, EvalMethodType.Max);
             q1 = q1.Clone();
-            q2 = new ClassicQ(new QOrdinalActionSpace(QRandom.Instance, 10));
+            q2 = new ClassicQ(new QOrdinalActionSpace(new QRandom(0), 10));
             q2.SetValue(125, 5, 17.0);
             q2.SetValue(8, 5, 29.0);
             q2.SetValue(122, 5, 17.0);
@@ -60,7 +60,7 @@ namespace HyperQ.Test
                 data = ms.ToArray();
             }
             // Now load it into a fresh learner
-            q = new ClassicQ(new QOrdinalActionSpace(QRandom.Instance, 10));
+            q = new ClassicQ(new QOrdinalActionSpace(new QRandom(0), 10));
             using (MemoryStream ms = new MemoryStream(data))
             using (BinaryReader r = new BinaryReader(ms, Encoding.UTF8))
             {
@@ -96,7 +96,7 @@ namespace HyperQ.Test
                 }
                 data = ms.ToArray();
             }
-            ClassicQQ other = new ClassicQQ(new QOrdinalActionSpace(QRandom.Instance, 10));
+            ClassicQQ other = new ClassicQQ(new QOrdinalActionSpace(new QRandom(0), 10));
             using (MemoryStream ms = new MemoryStream(data))
             using (BinaryReader r = new BinaryReader(ms, Encoding.UTF8))
             {

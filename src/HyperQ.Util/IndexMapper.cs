@@ -22,10 +22,10 @@ namespace HyperQ.Util
         /// </summary>
         private Dictionary<uint, T> _MapFromIndices = new Dictionary<uint, T>();
         /// <summary>
-        /// List of the indices that are free when the keys are removed from the mapper. Default will
-        /// use the shared index repository.
+        /// Hands out the indexes and keeps the ones freed when keys are removed. The mapper's own unless one
+        /// was given to share.
         /// </summary>
-        private IndexRepo _indices = IndexRepo.Instance;
+        private IndexRepo _indices;
         /// <summary>
         /// The max mappable value, defaults to -1 if no max
         /// </summary>
@@ -101,10 +101,20 @@ namespace HyperQ.Util
         }
 
         /// <summary>
-        /// Default instance constructor, will use the shared index repository.
+        /// Creates a mapper with an index repository of its own, starting at zero.
         /// </summary>
         public IndexMapper()
         {
+            _indices = new IndexRepo();
+        }
+
+        /// <summary>
+        /// Creates a mapper that draws its indexes from the given repository, shared with the other mappers
+        /// whose indexes must not collide with this one's.
+        /// </summary>
+        public IndexMapper(IndexRepo repo)
+        {
+            _indices = repo ?? throw new ArgumentNullException(nameof(repo));
         }
 
         public Dictionary<T,uint>.KeyCollection Keys
@@ -149,10 +159,9 @@ namespace HyperQ.Util
 
         public virtual IIndexMapper<T> Clone()
         {
-            IndexMapper<T> c = new IndexMapper<T>();
+            IndexMapper<T> c = new IndexMapper<T>(_indices);
             c._MapToIndices = new Dictionary<T, uint>(_MapToIndices);
             c._MapFromIndices = new Dictionary<uint, T>(_MapFromIndices);
-            c._indices = _indices;
             return (c);
         }
 

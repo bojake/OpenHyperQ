@@ -82,7 +82,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void MappedQ_RoundTrip_WithMappedActionSpace()
         {
-            QRandom ran = QRandom.Instance.Seed(3);
+            QRandom ran = new QRandom(3);
             MappedQ<decimal> q = new MappedQ<decimal>(new StaticMappedActionSpace(ran, 4));
             Fill(q, FlatStates);
             byte[] data = Save(q);
@@ -99,7 +99,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void MappedQ_RoundTrip_ContinuesLearning()
         {
-            QRandom ran = QRandom.Instance.Seed(4);
+            QRandom ran = new QRandom(4);
             MappedQ<decimal> q = new MappedQ<decimal>(new StaticMappedActionSpace(ran, 4));
             Fill(q, FlatStates);
             MappedQ<decimal> restored = new MappedQ<decimal>(new StaticMappedActionSpace(ran, 4));
@@ -116,7 +116,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void MappedQQ_RoundTrip()
         {
-            QRandom ran = QRandom.Instance.Seed(5);
+            QRandom ran = new QRandom(5);
             MappedQQ<decimal> q = new MappedQQ<decimal>(new StaticMappedActionSpace(ran, 4), ran: ran);
             Fill(q, FlatStates);
             MappedQQ<decimal> restored = new MappedQQ<decimal>(new StaticMappedActionSpace(ran, 4), ran: ran);
@@ -127,7 +127,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void ClassicQQ_RoundTrip()
         {
-            QRandom ran = QRandom.Instance.Seed(6);
+            QRandom ran = new QRandom(6);
             ClassicQQ q = new ClassicQQ(new QOrdinalActionSpace(ran, 4));
             Fill(q, FlatStates);
             ClassicQQ restored = new ClassicQQ(new QOrdinalActionSpace(ran, 4));
@@ -138,7 +138,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void ClassicQ_RoundTrip_RestoresOrdinalKnownActions()
         {
-            QRandom ran = QRandom.Instance.Seed(7);
+            QRandom ran = new QRandom(7);
             QOrdinalActionSpace space = new QOrdinalActionSpace(ran, 6);
             ClassicQ q = new ClassicQ(space);
             q.SetValue(1M, 4, 2.0); // ToIndex marks action 4 known, so 0..4 are known
@@ -152,7 +152,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void SingleHyperQ_RoundTrip()
         {
-            QRandom ran = QRandom.Instance.Seed(8);
+            QRandom ran = new QRandom(8);
             SingleHyperQ<decimal> q = new SingleHyperQ<decimal>(new QOrdinalActionSpace(ran, 4));
             Fill(q, HyperStates);
             SingleHyperQ<decimal> restored = new SingleHyperQ<decimal>(new QOrdinalActionSpace(ran, 4));
@@ -165,7 +165,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void DoubleHyperQ_RoundTrip()
         {
-            QRandom ran = QRandom.Instance.Seed(9);
+            QRandom ran = new QRandom(9);
             DoubleHyperQ<decimal> q = new DoubleHyperQ<decimal>(new QOrdinalActionSpace(ran, 4), ran: ran);
             Fill(q, HyperStates);
             DoubleHyperQ<decimal> restored = new DoubleHyperQ<decimal>(new QOrdinalActionSpace(ran, 4), ran: ran);
@@ -176,7 +176,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void LayeredHyperQ_RoundTrip_SingleLayers()
         {
-            QRandom ran = QRandom.Instance.Seed(10);
+            QRandom ran = new QRandom(10);
             QOrdinalActionSpace space = new QOrdinalActionSpace(ran, 4);
             LayeredHyperQ<decimal> q = new LayeredHyperQ<decimal>(() => new SingleHyperQ<decimal>(space), space);
             Fill(q, HyperStates);
@@ -190,7 +190,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void LayeredHyperQ_RoundTrip_DoubleLayers()
         {
-            QRandom ran = QRandom.Instance.Seed(11);
+            QRandom ran = new QRandom(11);
             QOrdinalActionSpace space = new QOrdinalActionSpace(ran, 4);
             LayeredHyperQ<decimal> q = new LayeredHyperQ<decimal>(() => new DoubleHyperQ<decimal>(space, ran: ran), space);
             Fill(q, HyperStates);
@@ -203,7 +203,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void MACEMinds_RoundTrip_ThroughGzipFile()
         {
-            QRandom ran = QRandom.Instance.Seed(12);
+            QRandom ran = new QRandom(12);
             StaticMappedActionSpace space = new StaticMappedActionSpace(ran, 4);
             MappedQ<decimal> q = new MappedQ<decimal>(space);
             PolicyGradientActionSelector<decimal> selector = new PolicyGradientActionSelector<decimal>(q, space);
@@ -241,7 +241,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void LearnerCheckpoint_File_UncompressedAndCompressed()
         {
-            QRandom ran = QRandom.Instance.Seed(13);
+            QRandom ran = new QRandom(13);
             ClassicQ q = new ClassicQ(new QOrdinalActionSpace(ran, 4));
             Fill(q, FlatStates);
             foreach (string ext in new[] { ".hqc", ".hqc.gz" })

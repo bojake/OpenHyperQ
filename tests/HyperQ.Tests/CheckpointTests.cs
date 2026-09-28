@@ -81,7 +81,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void ClassicQ_RoundTrip()
         {
-            QRandom ran = QRandom.Instance;
+            QRandom ran = new QRandom(0);
             QActionSpace<int> qas = new QOrdinalActionSpace(ran, 4);
             ClassicQ q = new ClassicQ(qas);
 
@@ -127,7 +127,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void ClassicQ_EmptyRoundTrip()
         {
-            QRandom ran = QRandom.Instance;
+            QRandom ran = new QRandom(0);
             QActionSpace<int> qas = new QOrdinalActionSpace(ran, 4);
             ClassicQ q = new ClassicQ(qas);
 
@@ -191,7 +191,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void PolicyGradientSelector_RoundTrip()
         {
-            QRandom ran = QRandom.Instance;
+            QRandom ran = new QRandom(0);
             QActionSpace<int> qas = new QOrdinalActionSpace(ran, 4);
             ClassicQ q = new ClassicQ(qas);
 
@@ -236,7 +236,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TrainingCheckpoint_SaveLoad_Integration()
         {
-            QRandom ran = QRandom.Instance;
+            QRandom ran = new QRandom(0);
             QActionSpace<int> qas = new QOrdinalActionSpace(ran, 4);
             ClassicQ q = new ClassicQ(qas);
 
@@ -293,7 +293,7 @@ namespace HyperQ.Test
         {
             // Version 1 files stored the selector state inline, without a length prefix. They must still load
             // when the selector is supplied, and load without it (the selector is the last section).
-            QRandom ran = QRandom.Instance;
+            QRandom ran = new QRandom(0);
             QActionSpace<int> qas = new QOrdinalActionSpace(ran, 4);
             ClassicQ q = new ClassicQ(qas);
             q.SetValue(1M, 0, 5.0);
@@ -342,7 +342,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TrainingCheckpoint_SaveLoadWithSelector()
         {
-            QRandom ran = QRandom.Instance;
+            QRandom ran = new QRandom(0);
             QActionSpace<int> qas = new QOrdinalActionSpace(ran, 4);
             ClassicQ q = new ClassicQ(qas);
             q.SetValue(1M, 0, 5.0);
@@ -382,7 +382,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TrainingCheckpoint_CanSkipSelectorPayload()
         {
-            QRandom ran = QRandom.Instance;
+            QRandom ran = new QRandom(0);
             QActionSpace<int> qas = new QOrdinalActionSpace(ran, 4);
             ClassicQ q = new ClassicQ(qas);
             q.SetValue(1M, 0, 5.0);
@@ -424,7 +424,7 @@ namespace HyperQ.Test
                     }
                 }
 
-                QRandom ran = QRandom.Instance;
+                QRandom ran = new QRandom(0);
                 QActionSpace<int> qas = new QOrdinalActionSpace(ran, 4);
                 ClassicQ q = new ClassicQ(qas);
                 var hp = new HyperParams();

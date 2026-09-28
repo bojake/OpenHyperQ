@@ -28,9 +28,9 @@ namespace HyperQ.Training
         /// the memory is full, otherwise the first memory (FIFO) is culled.
         /// </summary>
         public double CullLIFOLikelihood { get; set; } = 0.5;
-        public QNegPosMemory(int size, QRandom ran = null) : base(size,ran)
+        public QNegPosMemory(int size, QRandom ran) : base(size,ran)
         {
-            _Ran = ran ?? QRandom.Instance;
+            _Ran = ran;
         }
 
 

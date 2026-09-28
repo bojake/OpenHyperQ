@@ -16,10 +16,11 @@ namespace HyperQ.Learners
         private Q<decimal> _Q1;
         private Q<decimal> _Q2;
         private int _WhichQ = 0;
-        private Random _random = QRandom.Instance.Ran;
+        private QRandom _random;
         private Func<double, double, double> _BlendingFunction = null;
 
-        public ClassicQQ(QActionSpace<int> actionSpace, Func<double> defaultValueAction = null, Func<double, double, double> blendingFunction = null, Random ran = null) : base(actionSpace)
+        /// <param name="ran">Decides which table an update goes to; the action space's source when null.</param>
+        public ClassicQQ(QActionSpace<int> actionSpace, Func<double> defaultValueAction = null, Func<double, double, double> blendingFunction = null, QRandom ran = null) : base(actionSpace)
         {
             FeatureGate.Require(HyperQFeatures.LearnerDoubleQ);
             _Q1 = new ClassicQ(actionSpace, defaultValueAction);
@@ -28,10 +29,7 @@ namespace HyperQ.Learners
             {
                 DefaultValueFunc = defaultValueAction;
             }
-            if (ran != null)
-            {
-                _random = ran;
-            }
+            _random = ran ?? actionSpace.Random;
             if (blendingFunction != null)
             {
                 _BlendingFunction = blendingFunction;
@@ -134,7 +132,7 @@ namespace HyperQ.Learners
 
         public override Q<decimal> Clone()
         {
-            ClassicQQ c = new ClassicQQ(ActionSpace, DefaultValueFunc);
+            ClassicQQ c = new ClassicQQ(ActionSpace, DefaultValueFunc, ran: _random);
             c._Q1 = _Q1.Clone();
             c._Q2 = _Q2.Clone();
             return (c);
@@ -256,7 +254,7 @@ namespace HyperQ.Learners
         {
             if (random)
             {
-                _WhichQ = _random.Next(2);
+                _WhichQ = _random.Ran.Next(2);
             }
             else
             {

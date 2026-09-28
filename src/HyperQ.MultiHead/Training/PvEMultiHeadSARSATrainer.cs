@@ -34,14 +34,16 @@ namespace HyperQ.MultiHead.Training
 
         protected MultiHeadQLearner<T> _Q;
         public IActionSelector<T> ActionSelector { get; set; } = null;
-        protected QRandom _random = QRandom.Instance;
+        protected QRandom _random;
         public int MaxIterations { get; set; } = 0;
 
+        /// <param name="ran">The source of the trainer's own draws (Dyna, memory replay); the learner's action
+        /// space's when null.</param>
         public PvEMultiHeadSARSATrainer(MultiHeadQLearner<T> q, QEvalType evalType = QEvalType.OnPolicy, IActionSelector<T> actionSelector = null, QRandom ran = null)
         {
-            _Q = q;
+            _Q = q ?? throw new ArgumentNullException(nameof(q));
             _EvalType = evalType;
-            _random = ran ?? QRandom.Instance;
+            _random = ran ?? q.ActionSpace.Random;
             ActionSelector = actionSelector;
             if (ActionSelector == null)
             {

@@ -192,16 +192,12 @@ namespace HyperQ.Test
             string baseDir = MakeTempDir();
             string basePath = Path.Combine(baseDir, "map");
 
-            // Burn one global index so the key under test lands at slot >= 1.
+            // Start the index sequence at 1 so the key under test lands at slot >= 1.
             // That forces gap-fill tombstones into the .idx file, which is the
             // fragile case for slot discovery on restart.
-            FileIndexMapper<int> warmup = new FileIndexMapper<int>(Path.Combine(baseDir, "warmup"));
-            uint burned = warmup[7];
-            warmup.Dispose();
-
-            FileIndexMapper<int> m1 = new FileIndexMapper<int>(basePath);
+            FileIndexMapper<int> m1 = new FileIndexMapper<int>(basePath, repo: new IndexRepo(1));
             uint idx1 = m1[42];
-            Assert.IsTrue(idx1 > 0 || burned > 0, "Precondition: the key under test must not be at slot zero");
+            Assert.IsTrue(idx1 > 0, "Precondition: the key under test must not be at slot zero");
             m1.Dispose();
 
             MemoryMappedFileFactory.DisposeAll();

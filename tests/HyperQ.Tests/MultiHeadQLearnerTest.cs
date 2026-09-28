@@ -20,7 +20,7 @@ namespace HyperQ.Test
             int ap = 0;
 
             var scalarizer = new LinearScalarizer(new double[] { 1.0, 0.0 }); // only head0
-            QOrdinalActionSpace aspace = new QOrdinalActionSpace(QRandom.Instance, 10);
+            QOrdinalActionSpace aspace = new QOrdinalActionSpace(new QRandom(0), 10);
             var mh = new MultiHeadClassicQ(aspace, headCount: 2, lambda: 1.0, scalarizer: scalarizer);
 
             mh.AddState(s);
@@ -53,7 +53,7 @@ namespace HyperQ.Test
             int ap = 0;
 
             var scalarizer = new LinearScalarizer(new double[] { 1.0, 0.0 }); // only head0
-            QOrdinalActionSpace aspace = new QOrdinalActionSpace(QRandom.Instance, 10);
+            QOrdinalActionSpace aspace = new QOrdinalActionSpace(new QRandom(0), 10);
             var mh = new MultiHeadClassicQ(aspace, headCount: 2, lambda: 1.0, scalarizer: scalarizer);
 
             mh.AddState(s);
@@ -80,7 +80,7 @@ namespace HyperQ.Test
         public void TestGetActionArrayUsesPerActionAcrossHeads()
         {
             var scalarizer = new LinearScalarizer(new double[] { 1.0, 1.0 });
-            QOrdinalActionSpace aspace = new QOrdinalActionSpace(QRandom.Instance, 3);
+            QOrdinalActionSpace aspace = new QOrdinalActionSpace(new QRandom(0), 3);
             var mh = new MultiHeadClassicQ(aspace, headCount: 2, lambda: 1.0, scalarizer: scalarizer);
             int s = 7;
 
@@ -101,7 +101,7 @@ namespace HyperQ.Test
         public void TestArgMaxAndArgMinScanWholeActionSpace()
         {
             var scalarizer = new LinearScalarizer(new double[] { 1.0, 1.0 });
-            QOrdinalActionSpace aspace = new QOrdinalActionSpace(QRandom.Instance, 4);
+            QOrdinalActionSpace aspace = new QOrdinalActionSpace(new QRandom(0), 4);
             var mh = new MultiHeadClassicQ(aspace, headCount: 2, lambda: 1.0, scalarizer: scalarizer);
             int s = 42;
 
@@ -123,7 +123,7 @@ namespace HyperQ.Test
         {
             var hp = new HyperParams(a: 0.5, g: 0.0);
             var scalarizer = new LinearScalarizer(new double[] { 1.0, 1.0 });
-            QOrdinalActionSpace aspace = new QOrdinalActionSpace(QRandom.Instance, 3);
+            QOrdinalActionSpace aspace = new QOrdinalActionSpace(new QRandom(0), 3);
             var mh = new MultiHeadClassicQ(aspace, headCount: 2, lambda: 1.0, scalarizer: scalarizer);
             try
             {
@@ -138,7 +138,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestEvaluatorAssignsSelector()
         {
-            QOrdinalActionSpace aspace = new QOrdinalActionSpace(QRandom.Instance, 3);
+            QOrdinalActionSpace aspace = new QOrdinalActionSpace(new QRandom(0), 3);
             var mh = new MultiHeadClassicQ(aspace, headCount: 2, lambda: 1.0, scalarizer: new LinearScalarizer(new double[] { 1.0, 1.0 }));
             IActionSelector<decimal> selector = new UniformActionSelector<decimal>(mh, aspace);
             var evaluator = new MultiHeadQEvaluator<decimal, MultiReward>(mh, selector);
@@ -148,7 +148,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestHeadsArrayCtorSetsHeadCountAndSupportsUpdates()
         {
-            QOrdinalActionSpace aspace = new QOrdinalActionSpace(QRandom.Instance, 3);
+            QOrdinalActionSpace aspace = new QOrdinalActionSpace(new QRandom(0), 3);
             Q<decimal>[] heads = new Q<decimal>[]
             {
                 new ClassicQ(aspace),
@@ -165,7 +165,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestDefaultScalarizerMatchesHeadCount()
         {
-            QOrdinalActionSpace aspace = new QOrdinalActionSpace(QRandom.Instance, 3);
+            QOrdinalActionSpace aspace = new QOrdinalActionSpace(new QRandom(0), 3);
             var mh = new MultiHeadClassicQ(aspace, headCount: 3, lambda: 1.0, scalarizer: null);
             int s = 11;
 

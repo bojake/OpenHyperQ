@@ -330,10 +330,10 @@ namespace HyperQ.Test
         {
             MemoryBackedHyperMapper<decimal> f = new MemoryBackedHyperMapper<decimal>();
             List<decimal> d = new List<decimal>();
-            QRandom.Instance.Seed(0);
+            QRandom ran = new QRandom(0);
             for (int i = 0; i < 1000000; i++)
             {
-                d.Add((decimal)QRandom.Instance.Ran.Next(30000,30000000));
+                d.Add((decimal)ran.Ran.Next(30000,30000000));
             }
             int n_tests = ReadTestSize("HYPERQ_MB_EXHAUSTIVE_N", 20000);
             decimal[] values = d.ToArray();
@@ -385,10 +385,10 @@ namespace HyperQ.Test
             string baseDir = Path.Combine(Path.GetTempPath(), "FBExhaustiveTestFiveLevelMapping" + Guid.NewGuid().ToString());
             FileBackedHyperMapper<decimal> f = new FileBackedHyperMapper<decimal>(memoryFileName: baseDir);
             List<decimal> d = new List<decimal>();
-            QRandom.Instance.Seed(0);
+            QRandom ran = new QRandom(0);
             for (int i = 0; i < 1000000; i++)
             {
-                d.Add((decimal)QRandom.Instance.Ran.Next(30000, 30000000));
+                d.Add((decimal)ran.Ran.Next(30000, 30000000));
             }
             int n_tests = ReadTestSize("HYPERQ_FB_EXHAUSTIVE_N", 6000);
             decimal[] values = d.ToArray();

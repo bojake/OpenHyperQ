@@ -18,7 +18,6 @@ namespace HyperQ.Learners
     {
         protected Q<T> _Q;
         public IActionSelector<T> ActionSelector { get; protected set; } = null;
-        protected QRandom _random = QRandom.Instance;
         public int MaxIterations { get; set; } = 0;
 
         public QEvaluator(Q<T> q, IActionSelector<T> actionSelector)

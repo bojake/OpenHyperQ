@@ -20,11 +20,11 @@ namespace HyperQ.Test
         }
         private SingleQGenerator<decimal> MakeSingleGenerator()
         {
-            return new SingleQGenerator<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
+            return new SingleQGenerator<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
         }
         private DoubleQGenerator<decimal> MakeDoubleGenerator()
         {
-            return new DoubleQGenerator<decimal>(new StaticMappedActionSpace(QRandom.Instance, 10));
+            return new DoubleQGenerator<decimal>(new StaticMappedActionSpace(new QRandom(0), 10));
         }
         private IHyperQ<decimal> MakeSingleQ()
         {

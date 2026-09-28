@@ -10,10 +10,14 @@ namespace HyperQ.Util
     [Serializable]
     public abstract class QActionSpace<T> : ICheckpointable
     {
-        public QRandom Random { get; protected set; } = QRandom.Instance;
-        public QActionSpace(QRandom ran=null)
+        /// <summary>
+        /// The source random actions are drawn from. Learners, selectors and trainers built on this space draw
+        /// from it too unless they are given a source of their own.
+        /// </summary>
+        public QRandom Random { get; protected set; }
+        public QActionSpace(QRandom ran)
         {
-            Random = ran ?? QRandom.Instance;
+            Random = ran ?? throw new ArgumentNullException(nameof(ran));
         }
 
         /// <summary>

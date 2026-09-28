@@ -54,10 +54,10 @@ namespace HyperQ.Learners
         public string Label { get; set; } = "LayeredHyperQ";
         /// <summary>
         /// Registry of the complete states this learner has seen (and the shared index space of double-Q
-        /// layers). It draws its indexes from its own repository so that registering a state here never
-        /// disturbs the index sequence of layers that use the process-wide repository.
+        /// layers). Like every mapper it draws its indexes from a repository of its own, so registering a
+        /// state here never disturbs the index sequence of the layers.
         /// </summary>
-        private MemoryBackedHyperMapper<T> _StateMap = new MemoryBackedHyperMapper<T>(new IndexRepo());
+        private MemoryBackedHyperMapper<T> _StateMap = new MemoryBackedHyperMapper<T>();
         public virtual bool RequiresIndexRepositoryLinking { get { return false; } }
         public QAdvantage Advantage
         {

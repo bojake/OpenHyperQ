@@ -22,12 +22,12 @@ namespace HyperQ.Learners
             ActionSpace = actionSpace;
             _DefaultValueFunc = defaultValueFunc;
             _DefaultBlendingFunc = defaultBlendingFunc;
-            _ran = ran ?? QRandom.Instance;
+            _ran = ran ?? actionSpace.Random;
         }
 
         public Q<T> Mapped()
         {
-            return new MappedQQ<T>(ActionSpace, _DefaultValueFunc);
+            return new MappedQQ<T>(ActionSpace, _DefaultValueFunc, _ran);
         }
         public Q<QState<T>> Hyper()
         {

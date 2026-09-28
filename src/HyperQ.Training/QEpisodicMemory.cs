@@ -40,7 +40,7 @@ namespace HyperQ.Training
         protected List<QEpisodicMemoryCell<T, RT>> _EpisodicMemory = new List<QEpisodicMemoryCell<T, RT>>();
         private QEpisodicMemoryCell<T, RT> _CurrentEpisode = null;
 
-        public QEpisodicMemory(int maxSize, QRandom ran = null) : base(maxSize, ran: ran)
+        public QEpisodicMemory(int maxSize, QRandom ran) : base(maxSize, ran: ran)
         {
         }
 

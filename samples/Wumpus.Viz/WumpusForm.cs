@@ -238,7 +238,7 @@ namespace WumpusViz
 
         private void InitializeEnv()
         {
-            QRandom ran = QRandom.Instance.Seed(0);
+            QRandom ran = new QRandom(0);
             ResetUI();
         }
 

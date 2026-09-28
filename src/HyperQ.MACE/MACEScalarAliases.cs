@@ -21,33 +21,33 @@ namespace HyperQ.MACE.Training
     public class MACEPvESARSATrainer<T> : MACEPvESARSATrainer<T, ScalarReward>
     {
         public MACEPvESARSATrainer(
-            QEvalType evalType = QEvalType.OnPolicy,
-            QRandom ran = null)
-            : base(evalType, ran) { }
+            QRandom ran,
+            QEvalType evalType = QEvalType.OnPolicy)
+            : base(ran, evalType) { }
     }
 
     /// <summary>Convenience 1-arg alias for <see cref="QMemory{T,RT}"/> using <see cref="ScalarReward"/>.</summary>
     public class QMemory<T> : QMemory<T, ScalarReward>
     {
-        public QMemory(int maxSize, QRandom ran = null) : base(maxSize, ran) { }
+        public QMemory(int maxSize, QRandom ran) : base(maxSize, ran) { }
     }
 
     /// <summary>Convenience 1-arg alias for <see cref="QNegPosMemory{T,RT}"/> using <see cref="ScalarReward"/>.</summary>
     public class QNegPosMemory<T> : QNegPosMemory<T, ScalarReward>
     {
-        public QNegPosMemory(int size, QRandom ran = null) : base(size, ran) { }
+        public QNegPosMemory(int size, QRandom ran) : base(size, ran) { }
     }
 
     /// <summary>Convenience 1-arg alias for <see cref="QEpisodicMemory{T,RT}"/> using <see cref="ScalarReward"/>.</summary>
     public class QEpisodicMemory<T> : QEpisodicMemory<T, ScalarReward>
     {
-        public QEpisodicMemory(int maxSize, QRandom ran = null) : base(maxSize, ran) { }
+        public QEpisodicMemory(int maxSize, QRandom ran) : base(maxSize, ran) { }
     }
 
     /// <summary>Convenience 1-arg alias for <see cref="QEpisodicNegPosMemory{T,RT}"/> using <see cref="ScalarReward"/>.</summary>
     public class QEpisodicNegPosMemory<T> : QEpisodicNegPosMemory<T, ScalarReward>
     {
-        public QEpisodicNegPosMemory(int maxSize, QRandom ran = null) : base(maxSize, ran) { }
+        public QEpisodicNegPosMemory(int maxSize, QRandom ran) : base(maxSize, ran) { }
     }
 
     /// <summary>Convenience 1-arg alias for <see cref="DynaState{T,RT}"/> using <see cref="ScalarReward"/>.</summary>
@@ -65,6 +65,6 @@ namespace HyperQ.MACE.Eval
     /// <summary>Convenience 1-arg alias for <see cref="MACEEvaluator{T,RT}"/> using <see cref="ScalarReward"/>.</summary>
     public class MACEEvaluator<T> : MACEEvaluator<T, ScalarReward>
     {
-        public MACEEvaluator(QRandom ran = null) : base(ran) { }
+        public MACEEvaluator() : base() { }
     }
 }

@@ -24,10 +24,11 @@ namespace HyperQ.Training
         protected int _MaxSize = 500;
         protected QRandom _random;
 
-        public QMemory(int maxSize, QRandom ran = null)
+        /// <param name="ran">The source of the replay and culling draws.</param>
+        public QMemory(int maxSize, QRandom ran)
         {
             _MaxSize = maxSize;
-            _random = ran;
+            _random = ran ?? throw new ArgumentNullException(nameof(ran));
         }
 
         public virtual void StartEpisode()

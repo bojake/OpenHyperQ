@@ -22,7 +22,7 @@ Use it when:
 - you want checkpoint support today.
 
 ```csharp
-var actions = new QOrdinalActionSpace(QRandom.Instance, 4);
+var actions = new QOrdinalActionSpace(new QRandom(0), 4);
 var q = new ClassicQ(actions, defaultValueFunc: () => 0.0);
 ```
 
@@ -39,7 +39,7 @@ Use it when:
 - you want the learner to grow with visited states.
 
 ```csharp
-var actions = new QOrdinalActionSpace(QRandom.Instance, 4);
+var actions = new QOrdinalActionSpace(new QRandom(0), 4);
 var q = new MappedQ<string>(actions);
 ```
 
@@ -126,7 +126,7 @@ Available concrete learners include:
 - `MultiHeadHyperQQ<T>`
 
 ```csharp
-var actions = new QOrdinalActionSpace(QRandom.Instance, 4);
+var actions = new QOrdinalActionSpace(new QRandom(0), 4);
 var scalarizer = new LinearScalarizer(new[] { 0.7, 0.3 });
 var q = new MultiHeadMappedQ<decimal>(
     actions,

@@ -52,10 +52,11 @@ namespace HyperQ.Learners
         {
         }
 
+        /// <param name="ran">The source of the exploration draws; the action space's when null.</param>
         public MinMaxActionSelectorBase(QActionSpace<int> actionSpace, QRandom ran = null)
         {
             _actionSpace = actionSpace;
-            _ran = ran ?? QRandom.Instance;
+            _ran = ran ?? actionSpace.Random;
             _LastActions = new QAction[actionSpace.MaximumNumberOfActions];
             for (int i = 0; i < _LastActions.Length; i++)
             {
@@ -66,10 +67,6 @@ namespace HyperQ.Learners
             {
                 // All prior actions are equally probable
                 _LastActionProbabilities[i] = 1.0 / (double)_LastActions.Length;
-            }
-            if (ran != null)
-            {
-                _ran = ran;
             }
         }
 

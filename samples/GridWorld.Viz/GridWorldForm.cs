@@ -124,7 +124,7 @@ namespace GridWorldViz
 
         private void InitializeEnv()
         {
-            QRandom ran = QRandom.Instance.Seed(0);
+            QRandom ran = new QRandom(0);
             _world = new HyperGridWorld(4,4,ran);
             _actionSpace = new StaticMappedActionSpace(ran,4);// new QOrdinalActionSpace(ran,4);
             _q = new LayeredHyperQ<decimal>(() => new SingleHyperQ<decimal>(_actionSpace), _actionSpace);

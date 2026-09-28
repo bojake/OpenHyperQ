@@ -94,7 +94,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestTrainerHonorsOffPolicyEvalType()
         {
-            var actionSpace = new QOrdinalActionSpace(QRandom.Instance, 2);
+            var actionSpace = new QOrdinalActionSpace(new QRandom(0), 2);
             var spyQ = new SpyMultiHeadLearner(actionSpace);
             var selector = new FixedSelector();
             var trainer = new PvEMultiHeadSARSATrainer<int>(spyQ, QEvalType.OffPolicy, selector);

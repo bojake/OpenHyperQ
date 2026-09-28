@@ -9,12 +9,12 @@ namespace HyperQ.Training
 
     public class QMemory<T> : QMemory<T, ScalarReward>
     {
-        public QMemory(int capacity, QRandom random = null) : base(capacity, random) { }
+        public QMemory(int capacity, QRandom random) : base(capacity, random) { }
     }
 
     public class QNegPosMemory<T> : QNegPosMemory<T, ScalarReward>
     {
-        public QNegPosMemory(int capacity, QRandom random = null) : base(capacity, random) { }
+        public QNegPosMemory(int capacity, QRandom random) : base(capacity, random) { }
         // Implicit conversion to QMemory<T> (scalar alias)
         public static implicit operator QMemory<T>(QNegPosMemory<T> m)
         {
@@ -28,12 +28,12 @@ namespace HyperQ.Training
 
     public class QEpisodicMemory<T> : QEpisodicMemory<T, ScalarReward>
     {
-        public QEpisodicMemory(int capacity, QRandom random = null) : base(capacity, random) { }
+        public QEpisodicMemory(int capacity, QRandom random) : base(capacity, random) { }
     }
 
     public class QEpisodicNegPosMemory<T> : QEpisodicNegPosMemory<T, ScalarReward>
     {
-        public QEpisodicNegPosMemory(int capacity, QRandom random = null) : base(capacity, random) { }
+        public QEpisodicNegPosMemory(int capacity, QRandom random) : base(capacity, random) { }
     }
 
     public class DynaState<T> : DynaState<T, ScalarReward>

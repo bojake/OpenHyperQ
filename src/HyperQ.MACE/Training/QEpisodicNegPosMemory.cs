@@ -24,7 +24,7 @@ namespace HyperQ.MACE.Training
         protected List<QEpisodicMemoryCell<T, RT>> _FullEpisodicMemory = new List<QEpisodicMemoryCell<T, RT>>();
         private QEpisodicMemoryCell<T, RT> _CurrentEpisode = null;
 
-        public QEpisodicNegPosMemory(int maxSize, QRandom ran = null) : base(maxSize, ran: ran)
+        public QEpisodicNegPosMemory(int maxSize, QRandom ran) : base(maxSize, ran: ran)
         {
         }
         /// <summary>

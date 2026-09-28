@@ -65,7 +65,8 @@ namespace HyperQ.Learners
             {
                 _BlendingFunction = __default_blender;
             }
-            _random = ran ?? QRandom.Instance;
+            // Decides which table an update goes to.
+            _random = ran ?? actionSpace.Random;
             CreateDefaultActionArray();
             Advantage = new QAdvantage();
         }
@@ -328,7 +329,7 @@ namespace HyperQ.Learners
 
         public virtual Q<QState<T>> Clone()
         {
-            DoubleHyperQ<T> c = new DoubleHyperQ<T>(ActionSpace, DefaultValueFunc);
+            DoubleHyperQ<T> c = new DoubleHyperQ<T>(ActionSpace, DefaultValueFunc, _random);
             c._Q1 = _Q1.Clone() as SingleHyperQ<T>;
             c._Q2 = _Q2.Clone() as SingleHyperQ<T>;
             return (c);

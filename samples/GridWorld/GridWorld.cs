@@ -32,7 +32,7 @@ namespace HyperQ.Samples.GridWorld
 
         public BaseGridWorld(int r, int c, QRandom ran)
         {
-            this._ran = ran ?? QRandom.Instance;
+            this._ran = ran ?? throw new ArgumentNullException(nameof(ran));
             GoalRow = _ran.Ran.Next(r);
             GoalColumn = _ran.Ran.Next(c);
             MaxRows = r;

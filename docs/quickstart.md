@@ -64,7 +64,7 @@ using HyperQ.Learners;
 using HyperQ.Training;
 using HyperQ.Util;
 
-QRandom random = QRandom.Instance.Seed(0);
+QRandom random = new QRandom(0);
 QActionSpace<int> actions = new QOrdinalActionSpace(random, 4);
 var q = new MappedQ<decimal>(actions);
 var selector = new eGreedyActionSelector<decimal>(actions);
@@ -81,6 +81,8 @@ for (int episode = 0; episode < 1000; episode++)
 ```
 
 The environment owns domain state and rewards. The Q learner owns the value table. The selector turns Q values into chosen actions. The trainer coordinates episodes and updates.
+
+There is no process-wide random source. Whatever draws random numbers takes a `QRandom`: the action space always, memories and the MACE trainer always, and learners, selectors and trainers use their action space's unless they are given another. A run is therefore reproducible from its seed, and two runs in one process do not disturb each other unless they share a source.
 
 ## Persistence Note
 

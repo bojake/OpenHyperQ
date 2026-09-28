@@ -136,10 +136,9 @@ namespace HyperQ.MACE.Training
             return (UpdateT(s, a, sprime).UpdateR(s, a, r, hp));
         }
 
-        public IDynaEntry RandomSA(QRandom ran = null)
+        public IDynaEntry RandomSA(QRandom ran)
         {
-            if (ran == null)
-                ran = QRandom.Instance;
+            if (ran == null) throw new ArgumentNullException(nameof(ran));
             if (_Keys.Count == 0) throw new InvalidOperationException("DynaState has no learned (s,a) entries.");
             int ix = ran.Ran.Next(0, _Keys.Count);
             return _Keys[ix];

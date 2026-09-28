@@ -7,18 +7,22 @@ using System.Threading.Tasks;
 namespace HyperQ.Util
 {
     /// <summary>
-    /// A convenient random hub for maintaining a consistent random number sequence. Use this instance
-    /// for all of the random calculations so that the simulation and learning is predictable.
+    /// A seeded random source. There is no process-wide instance: whatever draws random numbers (an action
+    /// space, learner, selector, trainer, memory or environment) is handed its source, and learners, selectors
+    /// and trainers that are not handed one use their action space's. A run is then reproducible from the
+    /// seeds it was given, and runs or tests that do not share a source cannot disturb one another.
     /// </summary>
     [Serializable]
     public class QRandom
     {
-        public static QRandom Instance { get; private set; } = new QRandom();
         public Random Ran { get; private set; }
 
-        private QRandom()
+        /// <summary>
+        /// Creates a source whose sequence is fixed by the seed.
+        /// </summary>
+        public QRandom(int seed)
         {
-            Ran = new Random(0);
+            Ran = new Random(seed);
         }
 
         /// <summary>
@@ -31,6 +35,9 @@ namespace HyperQ.Util
             return (Ran.NextDouble());
         }
 
+        /// <summary>
+        /// Restarts the sequence from the given seed.
+        /// </summary>
         public QRandom Seed(int seed)
         {
             Ran = new Random(seed);

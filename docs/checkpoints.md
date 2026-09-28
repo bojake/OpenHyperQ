@@ -51,7 +51,7 @@ The LEM and HuntTheWumpus runners accept `save=<file>` and `load=<file>`. `save=
 ## Limitations
 
 - Shared state maps (double-Q and layered learners) are written once per table that shares them; the restore is idempotent, but the file is larger than it needs to be.
-- Index repositories that are shared process-wide (`IndexRepo.Instance`) are advanced past the restored indices; restoring into a process that already holds other learners on the same repository is safe but leaves gaps.
+- Each learner's state map owns its index repository, and a restore advances it past the restored indices, so states first seen after the restore get new rows.
 - `FileIndexMapper` persists itself and is not part of a checkpoint.
 
 ## Adding Checkpoint Support

@@ -19,16 +19,11 @@ namespace HyperQ.MACE.Eval
     public class MACEEvaluator<T,RT> where RT : IReward
     {
         private List<MACEMind<T>> _Minds = new List<MACEMind<T>>();
-        protected QRandom _random = QRandom.Instance;
         public int MaxIterations { get; set; } = 0;
 
-        public MACEEvaluator(QRandom ran = null)
+        public MACEEvaluator()
         {
             FeatureGate.Require(HyperQFeatures.Mace);
-            if (ran != null)
-            {
-                _random = ran;
-            }
         }
 
         public virtual void Add(Q<T> m, IActionSelector<T> actionSelector = null)

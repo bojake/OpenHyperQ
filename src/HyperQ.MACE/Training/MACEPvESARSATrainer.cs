@@ -23,7 +23,7 @@ namespace HyperQ.MACE.Training
     public class MACEPvESARSATrainer<T,RT> : ITrainingEvents where RT : IReward
     {
         private List<MACEMind<T>> _Minds = new List<MACEMind<T>>();
-        protected QRandom _random = QRandom.Instance;
+        protected QRandom _random;
         public int MaxIterations { get; set; } = 0;
         protected QEvalType _EvalType = QEvalType.OnPolicy;
         public bool WarmupEnabled { get; set; } = false;
@@ -44,13 +44,12 @@ namespace HyperQ.MACE.Training
         public event Action OnMemoryReplayStart;
         public event Action OnMemoryReplayEnd;
 
-        public MACEPvESARSATrainer(QEvalType evalType = QEvalType.OnPolicy, QRandom ran = null)
+        /// <param name="ran">The source of the trainer's own draws (Dyna, memory replay). The trainer has no
+        /// action space of its own to fall back to, so it must be given one.</param>
+        public MACEPvESARSATrainer(QRandom ran, QEvalType evalType = QEvalType.OnPolicy)
         {
             FeatureGate.Require(HyperQFeatures.Mace);
-            if (ran != null)
-            {
-                _random = ran;
-            }
+            _random = ran ?? throw new ArgumentNullException(nameof(ran));
             _EvalType = evalType;
         }
 

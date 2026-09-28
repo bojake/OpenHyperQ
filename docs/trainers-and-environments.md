@@ -49,7 +49,7 @@ Use `IPvEEnv<T>` when exactly one action is chosen per step. Use `IMACEPvEEnv<T,
 `PvESARSATrainer<T>` trains one Q learner in one environment. It supports on-policy SARSA and off-policy Q-learning style updates.
 
 ```csharp
-QRandom random = QRandom.Instance.Seed(0);
+QRandom random = new QRandom(0);
 var actions = new QOrdinalActionSpace(random, 4);
 var q = new MappedQ<decimal>(actions);
 var selector = new eGreedyActionSelector<decimal>(actions);
@@ -102,7 +102,7 @@ Warmup is useful when the Q table starts empty and early exploration matters.
 Replay memory stores experienced transitions and replays them through the same update path.
 
 ```csharp
-trainer.EnableMemory(new QMemory<decimal>(capacity: 10000));
+trainer.EnableMemory(new QMemory<decimal>(capacity: 10000, random: random));
 trainer.Reminisce(hp, count: 128);
 ```
 
@@ -143,7 +143,7 @@ MACE stands for Multi-Action Collective Environment. A MACE trainer owns multipl
 ```csharp
 using HyperQ.MACE.Training;
 
-var trainer = new MACEPvESARSATrainer<QState<decimal>>();
+var trainer = new MACEPvESARSATrainer<QState<decimal>>(random);
 
 trainer.Add(
     new MappedQ<QState<decimal>>(moveActions),
@@ -190,7 +190,7 @@ If you are building a new sample for OSS, start with `PvESARSATrainer<T>` unless
 using HyperQ.MultiHead;
 using HyperQ.MultiHead.Training;
 
-var actions = new QOrdinalActionSpace(QRandom.Instance, 4);
+var actions = new QOrdinalActionSpace(new QRandom(0), 4);
 var scalarizer = new LinearScalarizer(new[] { 0.7, 0.3 });
 var q = new MultiHeadMappedQ<decimal>(
     actions,

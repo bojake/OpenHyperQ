@@ -47,7 +47,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void TestMultiHeadQEvaluatorRejectsNullArgs()
         {
-            var aspace = new QOrdinalActionSpace(QRandom.Instance, 2);
+            var aspace = new QOrdinalActionSpace(new QRandom(0), 2);
             var q = new MultiHeadClassicQ(aspace, headCount: 2, scalarizer: new LinearScalarizer(new double[] { 0.5, 0.5 }));
             var selector = new UniformActionSelector<decimal>(q, aspace);
 

@@ -16,10 +16,9 @@ namespace HyperQ.MultiHead.Eval
     {
         private MultiHeadQLearner<T> _Q;
         public IActionSelector<T> ActionSelector { get; protected set; } = null;
-        protected QRandom _random = QRandom.Instance;
         public int MaxIterations { get; set; } = 0;
 
-        public MultiHeadQEvaluator(MultiHeadQLearner<T> qLearner, IActionSelector<T> actionSelector, QRandom ran = null)
+        public MultiHeadQEvaluator(MultiHeadQLearner<T> qLearner, IActionSelector<T> actionSelector)
         {
             FeatureGate.Require(HyperQFeatures.MultiHead);
             if (qLearner == null)
@@ -29,10 +28,6 @@ namespace HyperQ.MultiHead.Eval
             if (actionSelector == null)
             {
                 throw new ArgumentNullException(nameof(actionSelector));
-            }
-            if (ran != null)
-            {
-                _random = ran;
             }
             _Q = qLearner;
             ActionSelector = actionSelector;
