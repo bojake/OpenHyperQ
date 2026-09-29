@@ -20,11 +20,24 @@ namespace HyperQ.Learners
         public PolicyGradientWithSoftmaxActionSelector(IStateMapper<T> mapper, QActionSpace<int> actionSpace) : base(mapper, actionSpace) {
             _mapper = mapper;
         }
-        /// <summary>Convenience 1-arg ctor — creates internal MemoryBackedHyperMapper&lt;T&gt;.</summary>
+        /// <summary>
+        /// Retired for the reason given on <see cref="PolicyGradientActionSelector{T}"/>'s one-argument constructor:
+        /// a mapper of its own numbers states differently from the learner. Pass the learner as the mapper instead.
+        /// </summary>
+        [Obsolete("Pass the learner as the state mapper: new PolicyGradientWithSoftmaxActionSelector<T>(learner, actionSpace). The trainer hands ApplyAdvantage the learner's state index, so a selector with a mapper of its own applies each learned policy to the wrong state.", true)]
         public PolicyGradientWithSoftmaxActionSelector(QActionSpace<int> actionSpace)
             : this(new MemoryMapperAdapter<T>(), actionSpace) { }
 
-        public MinMaxActionEnum Mode { get; set; } = MinMaxActionEnum.Default;
+        /// <summary>
+        /// Retired alias of <see cref="UniformActionSelector{T}.ActionMode"/>. This selector used to read this separate
+        /// property instead of ActionMode, so callers that switched to evaluation through the interface kept sampling.
+        /// </summary>
+        [Obsolete("Use ActionMode. Mode is now an alias of it, and the selector reads ActionMode.")]
+        public MinMaxActionEnum Mode
+        {
+            get { return ActionMode; }
+            set { ActionMode = value; }
+        }
 
         protected Dictionary<uint, RunningSoftMax> Theta
         {
@@ -113,7 +126,7 @@ namespace HyperQ.Learners
         {
             LastActionWasRandom = false;
             RunningSoftMax rl = _Theta[state_index];
-            if (Mode == MinMaxActionEnum.MostProbable)
+            if (ActionMode == MinMaxActionEnum.MostProbable)
             {
                 uint a_max = 0;
                 double p_max = -1.0;
@@ -129,7 +142,7 @@ namespace HyperQ.Learners
                 LastActionProbability = p_max;
                 return a_max;
             }
-            else if (Mode == MinMaxActionEnum.LeastProbable)
+            else if (ActionMode == MinMaxActionEnum.LeastProbable)
             {
                 uint a_min = 0;
                 double p_min = 1.0;

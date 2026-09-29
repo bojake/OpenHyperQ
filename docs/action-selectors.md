@@ -87,8 +87,10 @@ Use it when:
 - you want checkpoint support for selector state.
 
 ```csharp
-var selector = new PolicyGradientActionSelector<decimal>(actions);
+var selector = new PolicyGradientActionSelector<decimal>(learner, actions);
 ```
+
+Pass the learner the trainer updates as the state mapper. This applies to every policy selector. The trainer hands `ApplyAdvantage` the learner's state index, so the selector must number states the same way. The one-argument constructors gave each selector a mapper of its own, which applied learned policies to the wrong states; they are now compile errors.
 
 During training, keep `ActionMode = MinMaxActionEnum.Default` so the selector samples from the learned policy. During evaluation, set `MostProbable` or `LeastProbable` to choose deterministically from the policy distribution.
 
@@ -124,7 +126,12 @@ Use it as an experimental selector when:
 
 ## HybridActionSelector<T>
 
-`HybridActionSelector<T>` composes selector behavior. Use it when one selector should be used for part of training and another for a different phase or condition.
+`HybridActionSelector<T>` chooses among several selectors by their episode rewards. At the start of each episode it picks one and uses it for the whole episode:
+
+1. Every selector that has not played an episode yet goes first, in the order given.
+2. After that, it picks the selector with the best average reward over its own last `window` episodes.
+
+Only the selector in use receives `ApplyAdvantage`, so each component learns from its own episodes. There is no exploration after the first round: a selector whose first episodes went badly returns only if the current selector's average drops below its last average.
 
 ## Telemetry
 

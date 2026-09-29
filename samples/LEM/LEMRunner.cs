@@ -358,13 +358,13 @@ namespace LEM
                     if (args.actionModel == ActionSelectionModel.eGreedy)
                         selector = new eGreedyActionSelector<T>(ras);
                     else if (args.actionModel == ActionSelectionModel.PolicyGradient)
-                        selector = new PolicyGradientActionSelector<T>(ras);
+                        selector = new PolicyGradientActionSelector<T>(_Q, ras);
                     else if (args.actionModel == ActionSelectionModel.GRPO_KL)
-                        selector = new GRPOWithKLPenaltyActionSelector<T>(ras, klCoef: 0.1);
+                        selector = new GRPOWithKLPenaltyActionSelector<T>(_Q, ras, klCoef: 0.1);
                     else if (args.actionModel == ActionSelectionModel.SoftMax)
-                        selector = new PolicyGradientWithSoftmaxActionSelector<T>(ras);
+                        selector = new PolicyGradientWithSoftmaxActionSelector<T>(_Q, ras);
                     else if (args.actionModel == ActionSelectionModel.SoftMax_KL)
-                        selector = new SoftmaxWithKLPenaltyActionSelector<T>(ras, klCoef: 0.1);
+                        selector = new SoftmaxWithKLPenaltyActionSelector<T>(_Q, ras, klCoef: 0.1);
                     PvESARSATrainer<T> s = new PvESARSATrainer<T>(_Q, evalType, selector, _Random);
                     if (args.memory_size > 0)
                     {

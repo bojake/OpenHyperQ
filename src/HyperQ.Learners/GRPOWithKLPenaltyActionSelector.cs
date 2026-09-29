@@ -26,7 +26,11 @@ namespace HyperQ.Learners
             _uniformRef = 1.0 / actionSpace.MaximumNumberOfActions;
         }
 
-        /// <summary>Convenience 1-arg ctor — creates internal MemoryBackedHyperMapper&lt;T&gt;.</summary>
+        /// <summary>
+        /// Retired for the reason given on <see cref="PolicyGradientActionSelector{T}"/>'s one-argument constructor:
+        /// a mapper of its own numbers states differently from the learner. Pass the learner as the mapper instead.
+        /// </summary>
+        [Obsolete("Pass the learner as the state mapper: new GRPOWithKLPenaltyActionSelector<T>(learner, actionSpace, klCoef). The trainer hands ApplyAdvantage the learner's state index, so a selector with a mapper of its own applies each learned policy to the wrong state.", true)]
         public GRPOWithKLPenaltyActionSelector(QActionSpace<int> actionSpace, double klCoef)
             : this(new MemoryMapperAdapter<T>(), actionSpace, klCoef) { }
 

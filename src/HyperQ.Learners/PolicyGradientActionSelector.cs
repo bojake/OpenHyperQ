@@ -27,7 +27,12 @@ namespace HyperQ.Learners
             _stateMapper = mapper;
         }
 
-        /// <summary>Convenience 1-arg ctor — creates internal MemoryBackedHyperMapper&lt;T&gt;.</summary>
+        /// <summary>
+        /// Retired: it gave the selector a state mapper of its own, but the trainer hands ApplyAdvantage the learner's
+        /// state index, so once the two numberings diverge (a warm-up, a terminal next state, an evaluation episode)
+        /// the policy learned for one state is applied to another. Pass the learner as the mapper instead.
+        /// </summary>
+        [Obsolete("Pass the learner as the state mapper: new PolicyGradientActionSelector<T>(learner, actionSpace). The trainer hands ApplyAdvantage the learner's state index, so a selector with a mapper of its own applies each learned policy to the wrong state.", true)]
         public PolicyGradientActionSelector(QActionSpace<int> actionSpace)
             : this(new MemoryMapperAdapter<T>(), actionSpace) { }
 
