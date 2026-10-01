@@ -342,6 +342,14 @@ namespace HyperQ.Learners
                 UpdateArgMinMax(stateKey);
         }
 
+        /// <summary>
+        /// Sets the value of (s, a). A single table is the only estimate, so this is SetValue.
+        /// </summary>
+        public virtual void InitializeValue(QState<T> stateKey, int action, double v)
+        {
+            SetValue(stateKey, action, v);
+        }
+
         public virtual IEnumerable<KeyValuePair<uint, double>> KnownActionValues(QState<T> stateKey)
         {
             if (!_StateMap.Known(stateKey.Enumerator))

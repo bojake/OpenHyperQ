@@ -55,5 +55,19 @@ namespace HyperQ.Learners
         /// be preserved.
         /// </summary>
         bool RequiresIndexRepositoryLinking { get; }
+        /// <summary>
+        /// Sets the value of (s, a) in every estimate the learner keeps, so that GetValue reports
+        /// <paramref name="v"/> afterwards. SetValue may write a single estimate: a double-Q learner writes its
+        /// current table and moves on to the other one, which suits applying an update. This suits initializing a
+        /// value, as <see cref="LayeredHyperQ{T}"/> does when it warm-starts a new fine state from its parent. The
+        /// default writes through SetValue, which is right for a learner that keeps a single estimate.
+        /// </summary>
+        /// <param name="stateKey">The state</param>
+        /// <param name="action">The action, in action space</param>
+        /// <param name="v">The value</param>
+        void InitializeValue(QState<T> stateKey, int action, double v)
+        {
+            SetValue(stateKey, action, v);
+        }
     }
 }

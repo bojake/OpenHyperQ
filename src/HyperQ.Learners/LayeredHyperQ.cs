@@ -214,30 +214,36 @@ namespace HyperQ.Learners
         {
             uint r = 0;
             EnsureLayers(stateKey.Count);
+            // CoarseToFine warm-starts every layer whose slice of the state is new. Ask the layers before the
+            // complete state is registered below: layers linked to the shared state map (double-Q layers) answer
+            // from that map, so the finest of them would otherwise always report the state as known.
+            bool[] isNew = null;
+            if (UpdateMode == LayerUpdateMode.CoarseToFineLayerUpdates)
+            {
+                isNew = new bool[_Layers.Count];
+                for (int i = 1; i < _Layers.Count; i++)
+                {
+                    isNew[i] = !_Layers[i].IsKnownState(stateKey.Slice(i + 1));
+                }
+            }
             // Register the complete state so Shape, KnownStates and AsMatrix can enumerate it.
             _StateMap.MapState(stateKey.Enumerator);
             for (int i = 0; i < _Layers.Count; i++)
             {
                 QState<T> slice = stateKey.Slice(i + 1);
-                bool isNew = UpdateMode == LayerUpdateMode.CoarseToFineLayerUpdates
-                             && i > 0
-                             && !_Layers[i].IsKnownState(slice);
-
                 r = _Layers[i].AddState(slice);
 
-                // CoarseToFine: warm-start new fine states from coarser layer values
-                if (isNew)
+                // CoarseToFine: a new fine state starts at the values its parent has learned. They are read by
+                // action-space index without side effects on the parent, and written to every estimate of the
+                // layer (both tables of a double-Q layer), so the new state reads them back whole.
+                if (isNew != null && isNew[i])
                 {
                     QState<T> coarserSlice = stateKey.Slice(i);
                     if (_Layers[i - 1].IsKnownState(coarserSlice))
                     {
-                        double[] coarseValues = _Layers[i - 1].GetActionArray(coarserSlice);
-                        if (coarseValues != null)
+                        foreach (KeyValuePair<uint, double> kv in _Layers[i - 1].KnownActionValues(coarserSlice).ToList())
                         {
-                            for (int ai = 0; ai < coarseValues.Length; ai++)
-                            {
-                                _Layers[i].SetValue(slice, ActionSpace.FromIndex((uint)ai), coarseValues[ai]);
-                            }
+                            _Layers[i].InitializeValue(slice, ActionSpace.FromIndex(kv.Key), kv.Value);
                         }
                     }
                 }
@@ -376,7 +382,9 @@ namespace HyperQ.Learners
             double[] r = new double[max];
             for (uint i = 0; i < max; i++)
             {
-                if (qmap.IsValidIndex(i))
+                // A mapped space can only translate the indexes it has handed out. Other spaces translate every
+                // index below their maximum, and GetValue answers the default for an action that is not known.
+                if (qmap == null || qmap.IsValidIndex(i))
                     r[i] = this[stateKey, ActionSpace.FromIndex(i)];
                 else if (DefaultValueFunc != null)
                     r[i] = DefaultValueFunc();
@@ -517,18 +525,35 @@ namespace HyperQ.Learners
 
         public void SetValue(QState<T> stateKey, int action, double v)
         {
+            WriteFinest(stateKey, (layer, qs) => layer[qs, action] = v);
+        }
+
+        /// <summary>
+        /// Like <see cref="SetValue"/>, but writes through the layer's <see cref="IHyperQ{T}.InitializeValue"/>, so
+        /// a double-Q layer holds the value in both of its tables.
+        /// </summary>
+        public void InitializeValue(QState<T> stateKey, int action, double v)
+        {
+            WriteFinest(stateKey, (layer, qs) => layer.InitializeValue(qs, action, v));
+        }
+
+        /// <summary>
+        /// Writes the finest layer. While the state has more elements than there are layers, a layer is added
+        /// and written with its slice of the state. The complete state is then registered.
+        /// </summary>
+        private void WriteFinest(QState<T> stateKey, Action<IHyperQ<T>, QState<T>> write)
+        {
             if (stateKey.Count > _Layers.Count)
             {
                 while (stateKey.Count > _Layers.Count)
                 {
                     EnsureLayers(_Layers.Count + 1);
-                    QState<T> qs = stateKey.Slice(_Layers.Count);
-                    _Layers[_Layers.Count - 1][qs, action] = v;
+                    write(_Layers[_Layers.Count - 1], stateKey.Slice(_Layers.Count));
                 }
             }
             else
             {
-                _Layers[_Layers.Count - 1][stateKey, action] = v;
+                write(_Layers[_Layers.Count - 1], stateKey);
             }
             if (stateKey.Count == _Layers.Count)
             {

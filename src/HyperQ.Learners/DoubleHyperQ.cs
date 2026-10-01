@@ -398,6 +398,20 @@ namespace HyperQ.Learners
         }
 
         /// <summary>
+        /// Sets the value of (s, a) in both tables, so the blended value reads back as <paramref name="v"/> with
+        /// any blending function that returns v for two equal values, as the default mean does. SetValue writes
+        /// only the current table, so the blend still carries what the other table holds: next to the default 0,
+        /// v reads back as v / 2. Unlike SetValue this does not move on to the other table.
+        /// </summary>
+        public virtual void InitializeValue(QState<T> stateKey, int action, double v)
+        {
+            AddState(stateKey);
+            _Q1.SetValue(stateKey, action, v);
+            _Q2.SetValue(stateKey, action, v);
+            InvalidateStateArgs(stateKey);
+        }
+
+        /// <summary>
         /// Drops the cached blended min/max of a state after one of the tables changed. Keeping the cache
         /// in sync incrementally is not possible because a lowered maximum needs a full rescan, so the
         /// extremes are recomputed lazily by the next ArgMax/ArgMin.
