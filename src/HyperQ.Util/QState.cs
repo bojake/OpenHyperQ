@@ -39,33 +39,64 @@ namespace HyperQ.Util
         }
     }
     /// <summary>
-    /// Represents a state instance in a Q learner.
+    /// Represents a state instance in a Q learner. Two states are equal when they hold equal elements in the same
+    /// order, and the hash code follows the elements in order. A state is mutable (Push, PopFirst, PopLast): one
+    /// that serves as a dictionary or set key must not be changed while it is a key.
     /// </summary>
     [Serializable]
     public class QState<T>: IEquatable<QState<T>>
     {
         private List<T> _Elements = new List<T>();
+
+        /// <summary>
+        /// Compares states by value, as <see cref="QState{T}.Equals(QState{T})"/> does.
+        /// </summary>
         public class EqualityComparer : IEqualityComparer<QState<T>>
         {
             public bool Equals(QState<T> x, QState<T> y)
             {
-                return (x == y);
+                return x is null ? y is null : x.Equals(y);
             }
 
             public int GetHashCode(QState<T> x)
             {
-                return (x.GetHashCode());
+                return x is null ? 0 : x.GetHashCode();
             }
         }
 
+        /// <summary>
+        /// True when <paramref name="q"/> holds equal elements in the same order. (This used to compare the
+        /// hash codes, which XOR-ed the elements' hashes, so [1, 2] equaled [2, 1], [3, 3] equaled [5, 5] and
+        /// the empty state, and any hash collision counted as equality.)
+        /// </summary>
         public bool Equals(QState<T> q)
         {
-            return (GetHashCode() == q.GetHashCode());
+            if (q is null)
+            {
+                return false;
+            }
+            if (ReferenceEquals(this, q))
+            {
+                return true;
+            }
+            if (q._Elements.Count != _Elements.Count)
+            {
+                return false;
+            }
+            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+            for (int i = 0; i < _Elements.Count; i++)
+            {
+                if (!comparer.Equals(_Elements[i], q._Elements[i]))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public override bool Equals(object q)
         {
-            return (GetHashCode() == q.GetHashCode());
+            return Equals(q as QState<T>);
         }
         public QState(T[] d = null)
         {
@@ -249,14 +280,22 @@ namespace HyperQ.Util
             return (this);
         }
 
+        /// <summary>
+        /// Combines the elements' hash codes in order. The combination is deterministic (no per-process seed), so
+        /// a state hashes the same way in every run.
+        /// </summary>
         public override int GetHashCode()
         {
-            int h = 0;
-            foreach (T e in _Elements)
+            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+            unchecked
             {
-                h ^= e.GetHashCode();
+                int h = 17;
+                foreach (T e in _Elements)
+                {
+                    h = h * 31 + (e is null ? 0 : comparer.GetHashCode(e));
+                }
+                return h;
             }
-            return (h);
         }
     }
 }
