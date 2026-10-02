@@ -113,6 +113,8 @@ Available memory types include:
 - `QEpisodicMemory<T>`: remembers episode boundaries;
 - `QEpisodicNegPosMemory<T>`: combines episodic and negative/positive behavior.
 
+These are sibling types with no conversions between them. A variable that may hold any of them is declared as the shared base type, `QMemory<T, ScalarReward>`, which is also what `EnableMemory` takes.
+
 The trainer also supports `Obsess(...)`, which replays the most recent episode when the memory type supports it.
 
 ## Dyna

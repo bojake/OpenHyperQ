@@ -5,6 +5,9 @@ namespace HyperQ.Training
     /// <summary>
     /// Convenience 1-arg aliases for Training generics that default RT to
     /// <see cref="ScalarReward"/>, matching the pre-.NET10 DLL API used by the sample runners.
+    /// The memory aliases are siblings, not subtypes of one another: a variable that may hold any of them
+    /// is declared as the shared base type, <c>QMemory&lt;T, ScalarReward&gt;</c>, which is also what
+    /// <see cref="PvESARSATrainer{T}.EnableMemory"/> takes.
     /// </summary>
 
     public class QMemory<T> : QMemory<T, ScalarReward>
@@ -12,18 +15,15 @@ namespace HyperQ.Training
         public QMemory(int capacity, QRandom random) : base(capacity, random) { }
     }
 
+    /// <summary>
+    /// The scalar alias of <see cref="QNegPosMemory{T, RT}"/>. It has no conversion to <see cref="QMemory{T}"/>:
+    /// the two are siblings, so code that needs either one uses the base type <c>QMemory&lt;T, ScalarReward&gt;</c>.
+    /// (An implicit conversion used to exist and always threw, which turned that mistake from a compile error
+    /// into a run-time crash, for example in <c>flag ? new QNegPosMemory&lt;T&gt;(...) : new QMemory&lt;T&gt;(...)</c>.)
+    /// </summary>
     public class QNegPosMemory<T> : QNegPosMemory<T, ScalarReward>
     {
         public QNegPosMemory(int capacity, QRandom random) : base(capacity, random) { }
-        // Implicit conversion to QMemory<T> (scalar alias)
-        public static implicit operator QMemory<T>(QNegPosMemory<T> m)
-        {
-            // Because QNegPosMemory<T,ScalarReward> derives from QMemory<T,ScalarReward>, and
-            // QMemory<T> derives from QMemory<T,ScalarReward>, C# won't allow direct assignment.
-            // We need a wrapper that holds this as its base.
-            // The cleanest approach: caller assigns via the 2-arg base — this is a no-op alias.
-            throw new System.InvalidCastException("Use (QMemory<T,ScalarReward>)m or EnableMemory with the typed overload.");
-        }
     }
 
     public class QEpisodicMemory<T> : QEpisodicMemory<T, ScalarReward>
