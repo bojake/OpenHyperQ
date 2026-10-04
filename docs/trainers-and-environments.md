@@ -115,7 +115,7 @@ Available memory types include:
 
 These are sibling types with no conversions between them. A variable that may hold any of them is declared as the shared base type, `QMemory<T, ScalarReward>`, which is also what `EnableMemory` takes.
 
-The trainer also supports `Obsess(...)`, which replays the most recent episode when the memory type supports it.
+The trainer also supports `Obsess(...)`, which replays the most recent episode (the steps remembered since the memory's `StartEpisode`) from any of these memory types.
 
 ## Dyna
 

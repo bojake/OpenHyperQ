@@ -20,6 +20,7 @@ namespace HyperQ.Training
     public class QMemory<T,RT>
     {
         protected List<QMemoryCell<T,RT>> _Memory = new List<QMemoryCell<T,RT>>();
+        /// <summary>The steps remembered since the last <see cref="StartEpisode"/>, for <see cref="ReplayEpisode"/>.</summary>
         protected List<QMemoryCell<T,RT>> _Episode = new List<QMemoryCell<T,RT>>();
         protected int _MaxSize = 500;
         protected QRandom _random;
@@ -56,6 +57,10 @@ namespace HyperQ.Training
             }
         }
 
+        /// <summary>
+        /// Replays the steps remembered since the last <see cref="StartEpisode"/>, in order: after
+        /// <see cref="EndEpisode"/>, the episode that just ended; during an episode, the episode so far.
+        /// </summary>
         public virtual void ReplayEpisode(HyperParams hp, Func<QMemoryCell<T,RT>, HyperParams, bool> callback)
         {
             foreach (QMemoryCell<T,RT> mem in _Episode)
@@ -90,6 +95,7 @@ namespace HyperQ.Training
                 _Memory.RemoveAt(0);
             }
             _Memory.Add(m);
+            _Episode.Add(m);
             return (m);
         }
 

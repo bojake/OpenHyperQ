@@ -45,6 +45,10 @@ namespace HyperQ.MACE.Training
         }
         public override void ReplayEpisode(HyperParams hp, Func<QMemoryCell<T, RT>, HyperParams, bool> callback)
         {
+            if (_FullEpisodicMemory.Count == 0)
+            {
+                return;
+            }
             foreach (QMemoryCell<T, RT> mem in _FullEpisodicMemory[_FullEpisodicMemory.Count - 1].Memory)
             {
                 callback(mem, hp);
