@@ -1,4 +1,4 @@
-﻿using HyperQ.Util;
+using HyperQ.Util;
 using HyperQ.Env;
 using System;
 using System.Collections.Generic;
@@ -37,6 +37,8 @@ namespace HuntTheWumpus
     }
     public class WumpusBaseGameEnv
     {
+        /// <summary>The static cave's seed when none is given.</summary>
+        public const int DefaultStaticSeed = 903387237;
         private const int FOODMAX = 64; // for number of bits optimization
         /*
          * Game State at any time is what can be seen around the player in terms of 8 directions
@@ -83,7 +85,8 @@ namespace HuntTheWumpus
             }
         }
 
-        public WumpusBaseGameEnv(QRandom ran = null, bool quiet = false, RewardModelType rewardModel = default, Tuple<int,int> dims = default)
+        /// <param name="staticSeed">Without a random source, the seed the static cave is rebuilt from on every reset.</param>
+        public WumpusBaseGameEnv(QRandom ran = null, bool quiet = false, RewardModelType rewardModel = default, Tuple<int,int> dims = default, int staticSeed = DefaultStaticSeed)
         {
             _ran = ran;
             if (_ran == null)
@@ -91,7 +94,7 @@ namespace HuntTheWumpus
                 // A static world: its own source, restarted from the same seed on every reset, so every episode
                 // plays the same cave. (It used to reseed the process-wide source, which also rewound the
                 // learners' and selectors' draws at every reset.)
-                _resetSeed = 903387237;
+                _resetSeed = staticSeed;
                 _ran = new QRandom(_resetSeed);
                 Console.WriteLine("CREATED WORLD WITH STATIC SEED {0}", _resetSeed);
             }

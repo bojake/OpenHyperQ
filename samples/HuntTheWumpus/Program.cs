@@ -1,4 +1,4 @@
-﻿using HyperQ.Learners;
+using HyperQ.Learners;
 using HyperQ.Util;
 using System;
 using System.Collections.Generic;
@@ -39,6 +39,11 @@ namespace HuntTheWumpus
         public string load_fname = null;
         public bool episodic = false;
         public bool obsession = false;
+        /// <summary>The run's seed: the learners' and trainer's random source, and the static cave's layout.</summary>
+        public int seed = WumpusBaseGameEnv.DefaultStaticSeed;
+        public bool seedSet = false;
+        /// <summary>Skip the Q-matrix CSV written for every mind at every evaluation epoch.</summary>
+        public bool nomatrix = false;
         public int max_training_steps = 500;
         public QParam g = new QParamExponential(0.997, 1.0, 0.997);
         public QParam e = new QParamExponential(0.5, 0.999991, 0.05);
@@ -128,6 +133,15 @@ namespace HuntTheWumpus
                 else if (cmdline[i] == "softmax+kl")
                 {
                     actionModel = ActionSelectionModel.SoftMax_KL;
+                }
+                else if (cmdline[i] == "nomatrix")
+                {
+                    nomatrix = true;
+                }
+                else if (cmdline[i].StartsWith("seed="))
+                {
+                    seed = int.Parse(cmdline[i].Substring(5));
+                    seedSet = true;
                 }
                 else if (cmdline[i] == "episodic")
                 {
@@ -234,6 +248,7 @@ namespace HuntTheWumpus
             }
             if (randomize)
                 Console.WriteLine("Randomizing training Worlds");
+            Console.WriteLine("Seed {0}", seed);
         }
     }
     internal class Program

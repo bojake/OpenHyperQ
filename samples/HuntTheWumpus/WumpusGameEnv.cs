@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,7 +11,7 @@ namespace HuntTheWumpus
 {
     public class WumpusGameEnv : WumpusBaseGameEnv, IMACEPvEEnv<decimal, ScalarReward>
     {
-        public WumpusGameEnv(QRandom ran = null, bool quiet = false) : base(ran, quiet)
+        public WumpusGameEnv(QRandom ran = null, bool quiet = false, int staticSeed = DefaultStaticSeed) : base(ran, quiet, staticSeed: staticSeed)
         {
         }
         public decimal Discretize()

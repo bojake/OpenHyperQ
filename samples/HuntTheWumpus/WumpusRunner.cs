@@ -23,7 +23,7 @@ namespace HuntTheWumpus
         }
         protected override WumpusBaseGameEnv CreateWorld()
         {
-            WumpusGameEnv world = new WumpusGameEnv(ran: _TheRandom, quiet: Quiet);
+            WumpusGameEnv world = new WumpusGameEnv(ran: _TheRandom, quiet: Quiet, staticSeed: WorldSeed);
             world.Metrics = new EnvMetrics(noHistory: true);
             return (world);
         }
@@ -37,7 +37,7 @@ namespace HuntTheWumpus
         }
         protected override WumpusBaseGameEnv CreateWorld()
         {
-            WumpusHyperGameEnv world = new WumpusHyperGameEnv(ran: _TheRandom, quiet: Quiet);
+            WumpusHyperGameEnv world = new WumpusHyperGameEnv(ran: _TheRandom, quiet: Quiet, staticSeed: WorldSeed);
             world.Metrics = new EnvMetrics(noHistory: true);
             return (world);
         }
@@ -51,7 +51,7 @@ namespace HuntTheWumpus
         }
         protected override WumpusBaseGameEnv CreateWorld()
         {
-            WumpusGameEnv world = new WumpusGameEnv(ran: _TheRandom, quiet: Quiet);
+            WumpusGameEnv world = new WumpusGameEnv(ran: _TheRandom, quiet: Quiet, staticSeed: WorldSeed);
             world.Metrics = new EnvMetrics(noHistory: false);
             return (world);
         }
@@ -65,7 +65,7 @@ namespace HuntTheWumpus
         }
         protected override WumpusBaseGameEnv CreateWorld()
         {
-            WumpusHyperGameEnv world = new WumpusHyperGameEnv(ran: _TheRandom, quiet: Quiet);
+            WumpusHyperGameEnv world = new WumpusHyperGameEnv(ran: _TheRandom, quiet: Quiet, staticSeed: WorldSeed);
             world.Metrics = new EnvMetrics(noHistory: false);
             return (world);
         }
@@ -80,7 +80,7 @@ namespace HuntTheWumpus
         }
         protected override WumpusBaseGameEnv CreateWorld()
         {
-            WumpusHyperGameEnv world = new WumpusHyperGameEnv(ran: _TheRandom, quiet: Quiet);
+            WumpusHyperGameEnv world = new WumpusHyperGameEnv(ran: _TheRandom, quiet: Quiet, staticSeed: WorldSeed);
             world.Metrics = new EnvMetrics(noHistory: false);
             return (world);
         }
@@ -95,7 +95,7 @@ namespace HuntTheWumpus
         }
         protected override WumpusBaseGameEnv CreateWorld()
         {
-            WumpusHyperGameEnv world = new WumpusHyperGameEnv(ran: _TheRandom, quiet: Quiet);
+            WumpusHyperGameEnv world = new WumpusHyperGameEnv(ran: _TheRandom, quiet: Quiet, staticSeed: WorldSeed);
             world.Metrics = new EnvMetrics(noHistory: false);
             return (world);
         }
@@ -249,6 +249,10 @@ namespace HuntTheWumpus
         /// every reset; the randomize option hands the world the run's source instead.
         /// </summary>
         protected QRandom _TheRandom = null;
+        /// <summary>The static cave's seed (option seed=).</summary>
+        protected int WorldSeed = WumpusBaseGameEnv.DefaultStaticSeed;
+        /// <summary>One row per greedy evaluation: wumpus-eval.csv.</summary>
+        private StreamWriter _EvalCsv = null;
         public int NumEpisodes { get; private set; }
         public WumpusBaseGameEnv World { get; private set; }
         protected MACEMind<T>[] _Q;
@@ -303,7 +307,7 @@ namespace HuntTheWumpus
         protected abstract Q<T> CreateLearner(QActionSpace<int> actionSpace);
         protected abstract WumpusBaseGameEnv CreateWorld();
 
-        private void EvaluateIt(bool quiet = false)
+        private void EvaluateIt(bool quiet = false, string episode = null)
         {
             MACEEvaluator<T, ScalarReward> eval = null;
             eval = new MACEEvaluator<T, ScalarReward>();
@@ -322,6 +326,12 @@ namespace HuntTheWumpus
             HyperParams hpz = new HyperParams(g: 0.997, e: 0.0, a: 1, edecay: 1, adecay: 1, min_epsilon: 0.0, min_alpha: 1);
             eval.Episode((IMACEPvEEnv<T, ScalarReward>)World, hpz);
             Console.WriteLine("Ending evaluation with total reward {0} in {1} states and {2} actions.", World.Metrics.TotalReward, World.Metrics.NumberOfStatesVisited, World.Metrics.NumberOfActionsTaken);
+            if (_EvalCsv != null && episode != null)
+            {
+                WumpusGameStatus rpt = World.Report;
+                _EvalCsv.WriteLine("{0},{1},{2},{3},{4},{5}", episode, World.Status, World.Metrics.TotalReward, World.Metrics.NumberOfActionsTaken, rpt.Gold, rpt.FoodLevel);
+                _EvalCsv.Flush();
+            }
             foreach (MACEMind<T> q in _Q)
             {
                 q.ActionSelector.ActionMode = MinMaxActionEnum.Default;
@@ -510,6 +520,11 @@ namespace HuntTheWumpus
                                 foreach (MACEMind<T> mind in _Q)
                                 {
                                     Console.WriteLine("Mind {1} Took {0:N0} random acts...", mind.ActionSelector.RandomActionCount, i / args.epStep, mm);
+                                    if (args.nomatrix)
+                                    {
+                                        mm++;
+                                        continue;
+                                    }
                                     try
                                     {
                                         double[,] matrix = mind.Mind.AsMatrix;
@@ -539,7 +554,7 @@ namespace HuntTheWumpus
                                 {
                                     Console.SetOut(swout2);
                                     // Evaluate
-                                    EvaluateIt(false);
+                                    EvaluateIt(false, (i + 1).ToString());
                                 }
                                 Console.SetOut(swout);
                             }
@@ -634,6 +649,11 @@ namespace HuntTheWumpus
         // int epStep, int warmup_episodes = 0, int memory_size = 500, int dyna_size = 200, bool use_negpos_memory = false, double dyna_freq = 0.2, QEvalType evalType = QEvalType.OffPolicy, int max_training_steps = 500, bool use_episodic_memory = false
         public void Run(ProgramArgs args)
         {
+            if (args.seedSet)
+            {
+                _Random.Seed(args.seed);
+                WorldSeed = args.seed;
+            }
             if (args.randomize)
             {
                 this._TheRandom = _Random;
@@ -668,13 +688,17 @@ namespace HuntTheWumpus
             }
             else
             {
+                _EvalCsv = new StreamWriter("wumpus-eval.csv");
+                _EvalCsv.WriteLine("episode,status,reward,actions,gold,food");
                 TrainIt(args);
                 using (StreamWriter swout = new StreamWriter($"wumpus-eval-final-{NumEpisodes}x{args.epStep}-{evalType}.log"))
                 {
                     Console.SetOut(swout);
                     // Evaluate
-                    EvaluateIt(false);
+                    EvaluateIt(false, "final");
                 }
+                _EvalCsv.Dispose();
+                _EvalCsv = null;
             }
             // Reset the console output
             Console.SetOut(console);
