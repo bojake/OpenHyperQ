@@ -133,6 +133,8 @@ var dyna = new DynaState<decimal>(iterations: 100, capacity: 0);
 trainer.EnableDyna(dyna, freq: 0.5, mode: DynaSweepMode.Uniform);
 ```
 
+On each training step the trainer updates the model with probability 0.8 and, with probability `freq`, makes `iterations` planning updates from it. Off-policy trainers bootstrap a planning update from the best next action, on-policy trainers from a random one.
+
 `DynaSweepMode.Prioritized` ranks replay by TD error. Start with uniform Dyna unless you specifically need prioritized planning.
 
 ## Advantage Signal

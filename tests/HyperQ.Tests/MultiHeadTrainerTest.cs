@@ -105,5 +105,26 @@ namespace HyperQ.Test
             Assert.AreEqual(0, spyQ.OnPolicyCalls, "Off-policy trainer should not call OnPolicyUpdate.");
             Assert.AreEqual(1, spyQ.OffPolicyCalls, "Off-policy trainer should call OffPolicyUpdate once in a single-step episode.");
         }
+
+        [TestMethod]
+        public void TestDynaPlans()
+        {
+            // The Dyna step used to draw an integer with Random.Next() and compare it with probabilities, so it
+            // never updated the model or planned.
+            var actionSpace = new QOrdinalActionSpace(new QRandom(0), 2);
+            var spyQ = new SpyMultiHeadLearner(actionSpace);
+            var trainer = new PvEMultiHeadSARSATrainer<int>(spyQ, QEvalType.OffPolicy, new FixedSelector(), new QRandom(5));
+            trainer.EnableDyna(new HyperQ.Training.DynaState<int, MultiReward>(3, 0), 0.8);
+            var env = new SingleStepEnv();
+
+            for (int i = 0; i < 50; i++)
+            {
+                trainer.Episode(env, new HyperParams());
+            }
+
+            // One live update per episode, plus three planning updates on about 80% of them.
+            int planning = spyQ.OffPolicyCalls - 50;
+            Assert.IsTrue(planning >= 75 && planning <= 150, "planning updates: {0}", planning);
+        }
     }
 }

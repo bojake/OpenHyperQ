@@ -106,7 +106,9 @@ namespace HyperQ.MACE.Training
         }
         protected virtual void Hallucinate(HyperParams hp)
         {
-            if (Dyna == null || Dyna.DynaIterations == 0)
+            // The model can still be empty on the first steps: a planning frequency above the model update
+            // frequency plans on steps that did not update the model.
+            if (Dyna == null || Dyna.DynaIterations == 0 || Dyna.Count == 0)
             {
                 return;
             }

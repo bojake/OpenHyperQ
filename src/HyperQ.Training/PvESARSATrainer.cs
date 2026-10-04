@@ -56,6 +56,7 @@ namespace HyperQ.Training
         public PvESARSATrainer(Q<T> q, QEvalType evalType = QEvalType.OnPolicy, IActionSelector<T> actionSelector = null, QRandom ran = null)
         {
             _Q = q ?? throw new ArgumentNullException(nameof(q));
+            _EvalType = evalType;
             _random = ran ?? q.ActionSpace.Random;
             ActionSelector = actionSelector;
             if (ActionSelector == null)
@@ -140,7 +141,7 @@ namespace HyperQ.Training
         {
             if (!DynaEnabled)
                 return;
-            double x = _random.Ran.Next();
+            double x = _random.Ran.NextDouble();
             if (x < DynaUpdateFrequency)
                 Dyna.Update(last_sa.Item1, last_sa.Item2, sprime, r, hp);
             if (x < DynaFrequency)
@@ -274,7 +275,9 @@ namespace HyperQ.Training
 
         protected virtual void Hallucinate(HyperParams hp)
         {
-            if (Dyna == null || Dyna.DynaIterations == 0)
+            // The model can still be empty on the first steps: a planning frequency above the model update
+            // frequency plans on steps that did not update the model.
+            if (Dyna == null || Dyna.DynaIterations == 0 || Dyna.Count == 0)
             {
                 return;
             }

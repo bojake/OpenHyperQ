@@ -126,7 +126,7 @@ namespace HyperQ.MultiHead.Training
         {
             if (!DynaEnabled)
                 return;
-            double x = _random.Ran.Next();
+            double x = _random.Ran.NextDouble();
             if (x < DynaUpdateFrequency)
                 Dyna.Update(last_sa.Item1, last_sa.Item2, sprime, r, hp);
             if (x < DynaFrequency)
@@ -238,7 +238,9 @@ namespace HyperQ.MultiHead.Training
 
         protected virtual void Hallucinate(HyperParams hp)
         {
-            if (Dyna == null || Dyna.DynaIterations == 0)
+            // The model can still be empty on the first steps: a planning frequency above the model update
+            // frequency plans on steps that did not update the model.
+            if (Dyna == null || Dyna.DynaIterations == 0 || Dyna.Count == 0)
             {
                 return;
             }

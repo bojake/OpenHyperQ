@@ -89,6 +89,8 @@ namespace HyperQ.MACE.Training
 
         public int DynaIterations { get; private set; } = 0;
         public int HistoryCapacity => _History?.Capacity ?? 0;
+        /// <summary>The number of (s,a) pairs the model has learned; planning has nothing to sample while it is 0.</summary>
+        public int Count => _Keys.Count;
         public bool PositiveOnly { get; private set; } = false;
 
 
