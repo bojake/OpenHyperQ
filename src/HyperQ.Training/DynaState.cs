@@ -76,8 +76,15 @@ namespace HyperQ.Training
 
         /// <summary>
         /// Priority queue for prioritized sweeping (min-heap with negated priorities for max-first behavior).
+        /// It can hold stale copies of an entry whose priority was raised; <see cref="_Queued"/> says which copy counts.
         /// </summary>
         private readonly PriorityQueue<IDynaEntry, double> _PQueue = new PriorityQueue<IDynaEntry, double>();
+
+        /// <summary>
+        /// The priority each queued (s,a) entry waits with, at most one per entry, as in Moore and Atkeson's
+        /// prioritized sweeping.
+        /// </summary>
+        private readonly Dictionary<IDynaEntry, double> _Queued = new Dictionary<IDynaEntry, double>();
 
         /// <summary>
         /// Minimum absolute TD error required to insert an entry into the priority queue.
@@ -129,25 +136,53 @@ namespace HyperQ.Training
         // ── Prioritized sweeping public API ──
 
         /// <summary>
-        /// Inserts an (s,a) entry into the priority queue if its absolute TD error
-        /// exceeds the threshold. Duplicates are allowed; stale entries are harmless.
+        /// Queues an (s,a) entry if its absolute TD error exceeds the threshold. An entry waits in the queue at most
+        /// once, with the highest priority it was given. (Queueing every insertion, duplicates included, grew the queue
+        /// without bound: each planning sweep pops one entry and can push all of its predecessors, so long runs ran out
+        /// of memory.)
         /// </summary>
         public void InsertPriority(IDynaEntry entry, double absTdError)
         {
-            if (absTdError > PriorityThreshold)
-                _PQueue.Enqueue(entry, -absTdError); // negate for max-first
+            if (!(absTdError > PriorityThreshold))
+                return;
+            if (_Queued.TryGetValue(entry, out double queued) && queued >= absTdError)
+                return;
+            _Queued[entry] = absTdError;
+            _PQueue.Enqueue(entry, -absTdError); // negate for max-first
+            // Raising a queued entry's priority leaves its old copy behind; drop the stale copies when they outnumber the
+            // live entries, so the heap stays within about twice the number of queued entries.
+            if (_PQueue.Count > 2 * _Queued.Count + 64)
+            {
+                _PQueue.Clear();
+                foreach (KeyValuePair<IDynaEntry, double> kv in _Queued)
+                    _PQueue.Enqueue(kv.Key, -kv.Value);
+            }
         }
 
         /// <summary>
-        /// Pops the highest-priority (s,a) entry. Returns null if the queue is empty.
+        /// Pops the highest-priority (s,a) entry, skipping stale copies. Returns null if the queue is empty.
         /// </summary>
         public IDynaEntry PopPriority()
         {
-            return _PQueue.Count > 0 ? _PQueue.Dequeue() : null;
+            while (_PQueue.TryDequeue(out IDynaEntry entry, out double negated))
+            {
+                if (_Queued.TryGetValue(entry, out double queued) && queued == -negated)
+                {
+                    _Queued.Remove(entry);
+                    return entry;
+                }
+            }
+            return null;
         }
 
         /// <summary>True if the priority queue has entries to process.</summary>
-        public bool HasPriority => _PQueue.Count > 0;
+        public bool HasPriority => _Queued.Count > 0;
+
+        /// <summary>The number of (s,a) entries waiting in the priority queue.</summary>
+        public int QueuedCount => _Queued.Count;
+
+        /// <summary>The size of the queue's heap, stale copies included; it stays within about twice <see cref="QueuedCount"/>.</summary>
+        public int PriorityHeapSize => _PQueue.Count;
 
         /// <summary>
         /// Returns all (s,a) entries whose model predicts transitioning TO the given state.

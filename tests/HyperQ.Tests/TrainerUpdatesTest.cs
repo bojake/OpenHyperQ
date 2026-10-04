@@ -116,6 +116,17 @@ namespace HyperQ.Test
         }
 
         [TestMethod]
+        public void PrioritizedSweepingKeepsItsQueueSmall()
+        {
+            // Each sweep pops one entry and pushes its predecessors; with every insertion queued, the queue grew with
+            // every step until long runs ran out of memory.
+            var (_, trainer, steps) = Train(QEvalType.OffPolicy, t => t.EnableDyna(new DynaState<decimal>(10, 0), 0.8, DynaSweepMode.Prioritized), episodes: 300);
+            Assert.IsTrue(steps > 1000);
+            Assert.IsTrue(trainer.Dyna.QueuedCount <= trainer.Dyna.Count, "{0} queued for {1} model entries", trainer.Dyna.QueuedCount, trainer.Dyna.Count);
+            Assert.IsTrue(trainer.Dyna.PriorityHeapSize <= 2 * trainer.Dyna.QueuedCount + 65, "heap of {0}", trainer.Dyna.PriorityHeapSize);
+        }
+
+        [TestMethod]
         public void PlanningMoreOftenThanTheModelUpdatesDoesNotFailOnAnEmptyModel()
         {
             // At a planning frequency of 1, a step whose draw is at least the model update frequency (0.8) plans without
