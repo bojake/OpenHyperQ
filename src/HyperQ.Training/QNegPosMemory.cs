@@ -28,9 +28,82 @@ namespace HyperQ.Training
         /// the memory is full, otherwise the first memory (FIFO) is culled.
         /// </summary>
         public double CullLIFOLikelihood { get; set; } = 0.5;
+
+        private bool _KeepExtremes = false;
+        /// <summary>
+        /// When true, each sorted memory keeps its most extreme entries: the negative memory its most negative
+        /// rewards, the positive memory its most positive. A full memory drops its mildest entry, the oldest among
+        /// equals, and <see cref="CullLIFOLikelihood"/> is ignored. The positive memory is then sorted most positive
+        /// first, so a positive count passed to Slice takes the most extreme entries of either memory.
+        /// Off by default. A full memory then drops its first or last entry by <see cref="CullLIFOLikelihood"/>; both
+        /// memories are sorted ascending, so that is its most extreme or its mildest entry, and over time both settle
+        /// around their median reward. Set it before remembering anything, or after <see cref="Clear"/>.
+        /// </summary>
+        public bool KeepExtremes
+        {
+            get
+            {
+                return (_KeepExtremes);
+            }
+            set
+            {
+                if (value != _KeepExtremes && HasRankedEntries)
+                {
+                    throw new InvalidOperationException("KeepExtremes decides how the negative and positive memories are sorted; set it before remembering anything, or after Clear().");
+                }
+                _KeepExtremes = value;
+            }
+        }
+
+        /// <summary>
+        /// When true, Playback chooses the negative, positive or recent memory for each draw, with the recall
+        /// likelihoods. Off by default: one memory is chosen per Playback call, and all of its draws come from it.
+        /// </summary>
+        public bool ChooseListPerDraw { get; set; } = false;
+
         public QNegPosMemory(int size, QRandom ran) : base(size,ran)
         {
             _Ran = ran;
+        }
+
+        /// <summary>True when the sorted memories hold entries, after which <see cref="KeepExtremes"/> cannot change.</summary>
+        protected virtual bool HasRankedEntries
+        {
+            get
+            {
+                return (_NegMemory.Count > 0 || _PosMemory.Count > 0);
+            }
+        }
+
+        /// <summary>
+        /// The index that a full sorted memory of the given size drops: its last entry, the mildest, when keeping
+        /// extremes; otherwise its last entry with probability <see cref="CullLIFOLikelihood"/>, else its first.
+        /// </summary>
+        protected int CullIndex(int count)
+        {
+            if (KeepExtremes)
+            {
+                return (count - 1);
+            }
+            return (_Ran.Ran.NextDouble() < CullLIFOLikelihood ? count - 1 : 0);
+        }
+
+        /// <summary>
+        /// The memory that a draw p in [0,1) recalls from: the negative memory when p is below
+        /// <see cref="NegativeRecallLikelihood"/>, then the positive memory for the next
+        /// <see cref="PositiveRecallLikelihood"/>, else the recent one. An empty memory passes the draw on.
+        /// </summary>
+        protected List<L> Choose<L>(double p, List<L> neg, List<L> pos, List<L> recent)
+        {
+            if (p < NegativeRecallLikelihood && neg.Count > 0)
+            {
+                return (neg);
+            }
+            if (p - NegativeRecallLikelihood < PositiveRecallLikelihood && pos.Count > 0)
+            {
+                return (pos);
+            }
+            return (recent);
         }
 
 
@@ -41,12 +114,7 @@ namespace HyperQ.Training
             {
                 if (_NegMemory.Count == _MaxSize)
                 {
-                    int ix = 0;
-                    if (_Ran.Ran.NextDouble() < CullLIFOLikelihood)
-                    {
-                        ix = _NegMemory.Count - 1;
-                    }
-                    _NegMemory.RemoveAt(ix);
+                    _NegMemory.RemoveAt(CullIndex(_NegMemory.Count));
                 }
                 int i = bisect_left(_NegMemory, m);
                 _NegMemory.Insert(i, m);
@@ -55,14 +123,9 @@ namespace HyperQ.Training
             {
                 if (_PosMemory.Count == _MaxSize)
                 {
-                    int ix = 0;
-                    if (_Ran.Ran.NextDouble() < CullLIFOLikelihood)
-                    {
-                        ix = _PosMemory.Count - 1;
-                    }
-                    _PosMemory.RemoveAt(ix);
+                    _PosMemory.RemoveAt(CullIndex(_PosMemory.Count));
                 }
-                int i = bisect_left(_PosMemory, m);
+                int i = bisect_left(_PosMemory, m, ascending: !KeepExtremes);
                 _PosMemory.Insert(i, m);
             }
             return (m);
@@ -121,17 +184,36 @@ namespace HyperQ.Training
         /// <returns>A subset of tuples in the negative or positive memory.  -1 is the last element in the memory, and 1 is the first element.</returns>
         public override List<QMemoryCell<T,RT>>  Slice(int count = -1)
         {
-            double p = Ran.Ran.NextDouble();
-            List<QMemoryCell<T,RT>> l = _Memory;
-            if (p < NegativeRecallLikelihood && _NegMemory.Count > 0)
+            return (SliceList(Choose(Ran.Ran.NextDouble(), _NegMemory, _PosMemory, _Memory), count));
+        }
+
+        /// <summary>
+        /// Replays count random draws. By default all of them come from the one memory that <see cref="Slice"/>
+        /// chooses for the call. With <see cref="ChooseListPerDraw"/>, each draw chooses the negative, positive or
+        /// recent memory, each sliced by count, with the recall likelihoods.
+        /// </summary>
+        public override bool Playback(int count, HyperParams hp, Func<QMemoryCell<T,RT>, HyperParams, bool> callback)
+        {
+            if (!ChooseListPerDraw)
             {
-                l = _NegMemory;
+                return (base.Playback(count, hp, callback));
             }
-            else if (p - NegativeRecallLikelihood < PositiveRecallLikelihood && _PosMemory.Count > 0)
+            List<QMemoryCell<T,RT>> neg = SliceList(_NegMemory, count);
+            List<QMemoryCell<T,RT>> pos = SliceList(_PosMemory, count);
+            List<QMemoryCell<T,RT>> recent = SliceList(_Memory, count);
+            for (int i = 0; i < count; i++)
             {
-                l = _PosMemory;
+                List<QMemoryCell<T,RT>> l = Choose(Ran.Ran.NextDouble(), neg, pos, recent);
+                if (l.Count == 0)
+                {
+                    continue;
+                }
+                if (!callback(l[Ran.Ran.Next(0, l.Count)], hp))
+                {
+                    break;
+                }
             }
-            return (SliceList(l, count));
+            return true;
         }
     }
 }

@@ -27,6 +27,22 @@ namespace HyperQ.Training
         public QEpisodicNegPosMemory(int maxSize, QRandom ran) : base(maxSize, ran: ran)
         {
         }
+
+        /// <summary>
+        /// When true, Playback's count is the number of steps to replay rather than a slice of episodes: whole
+        /// episodes are drawn at random and replayed, last step first when <see cref="QMemory{T,RT}.ReplayBackward"/>
+        /// is set, until count steps have been replayed, the last episode cut short. A replay budget then means the
+        /// same for episodic and transition memories. Off by default.
+        /// </summary>
+        public bool CountSteps { get; set; } = false;
+
+        protected override bool HasRankedEntries
+        {
+            get
+            {
+                return (_NegEpisodicMemory.Count > 0 || _PosEpisodicMemory.Count > 0 || base.HasRankedEntries);
+            }
+        }
         /// <summary>
         /// Stores the current episode memory and starts a new memory episode.
         /// </summary>
@@ -49,13 +65,44 @@ namespace HyperQ.Training
             {
                 return;
             }
-            foreach (QMemoryCell<T, RT> mem in _FullEpisodicMemory[_FullEpisodicMemory.Count - 1].Memory)
+            foreach (QMemoryCell<T, RT> mem in InReplayOrder(_FullEpisodicMemory[_FullEpisodicMemory.Count - 1].Memory))
             {
                 callback(mem, hp);
             }
         }
+        /// <summary>
+        /// Replays episodes from the negative, positive or full memory. By default one memory is chosen per call, its
+        /// first count episodes (its last -count when count is negative) are sliced off, and that many random draws
+        /// from the slice are replayed. With <see cref="QNegPosMemory{T,RT}.ChooseListPerDraw"/>, each of |count|
+        /// draws chooses its own memory and slice. With <see cref="CountSteps"/>, count is a number of steps instead,
+        /// and episodes are drawn from the whole of the chosen memory.
+        /// </summary>
         public override bool Playback(int count, HyperParams hp, Func<QMemoryCell<T, RT>, HyperParams, bool> callback)
         {
+            if (CountSteps)
+            {
+                List<QEpisodicMemoryCell<T, RT>> chosen = ChooseListPerDraw ? null : SelectMemory();
+                EpisodicReplay.PlaySteps(count, () => chosen ?? SelectMemory(), InReplayOrder, Ran, hp, callback);
+                return true;
+            }
+            if (ChooseListPerDraw)
+            {
+                for (int i = 0; i < Math.Abs(count); i++)
+                {
+                    List<QEpisodicMemoryCell<T, RT>> slice = EpisodicSlice(SelectMemory(), count);
+                    if (slice == null || slice.Count == 0)
+                    {
+                        continue;
+                    }
+                    QEpisodicMemoryCell<T, RT> drawn = slice[Ran.Ran.Next(0, slice.Count)];
+                    foreach (QMemoryCell<T, RT> cell in InReplayOrder(drawn.Memory))
+                        if (!callback(cell, hp))
+                        {
+                            break;
+                        }
+                }
+                return true;
+            }
             List<QEpisodicMemoryCell<T, RT>> qMemoryCells = EpisodicSlice(SelectMemory(), count);
             if (qMemoryCells == null)
             {
@@ -65,7 +112,7 @@ namespace HyperQ.Training
             {
                 int ix = Ran.Ran.Next(0, qMemoryCells.Count);
                 QEpisodicMemoryCell<T, RT> episode = qMemoryCells[ix];
-                foreach (QMemoryCell<T, RT> cell in episode.Memory)
+                foreach (QMemoryCell<T, RT> cell in InReplayOrder(episode.Memory))
                     if (!callback(cell, hp))
                     {
                         break;
@@ -91,12 +138,7 @@ namespace HyperQ.Training
                 {
                     if (_NegEpisodicMemory.Count == _MaxSize)
                     {
-                        int ix = 0;
-                        if (Ran.Ran.NextDouble() < CullLIFOLikelihood)
-                        {
-                            ix = _NegEpisodicMemory.Count - 1;
-                        }
-                        _NegEpisodicMemory.RemoveAt(ix);
+                        _NegEpisodicMemory.RemoveAt(CullIndex(_NegEpisodicMemory.Count));
                     }
                     int i = bisect_left(_NegEpisodicMemory, _CurrentEpisode);
                     _NegEpisodicMemory.Insert(i, _CurrentEpisode);
@@ -105,14 +147,9 @@ namespace HyperQ.Training
                 {
                     if (_PosEpisodicMemory.Count == _MaxSize)
                     {
-                        int ix = 0;
-                        if (Ran.Ran.NextDouble() < CullLIFOLikelihood)
-                        {
-                            ix = _PosEpisodicMemory.Count - 1;
-                        }
-                        _PosEpisodicMemory.RemoveAt(ix);
+                        _PosEpisodicMemory.RemoveAt(CullIndex(_PosEpisodicMemory.Count));
                     }
-                    int i = bisect_left(_PosEpisodicMemory, _CurrentEpisode);
+                    int i = bisect_left(_PosEpisodicMemory, _CurrentEpisode, ascending: !KeepExtremes);
                     _PosEpisodicMemory.Insert(i, _CurrentEpisode);
                 }
             }
@@ -142,17 +179,7 @@ namespace HyperQ.Training
 
         protected virtual List<QEpisodicMemoryCell<T, RT>> SelectMemory()
         {
-            double p = Ran.Ran.NextDouble();
-            List<QEpisodicMemoryCell<T, RT>> l = _FullEpisodicMemory;
-            if (p < NegativeRecallLikelihood && _NegEpisodicMemory.Count > 0)
-            {
-                l = _NegEpisodicMemory;
-            }
-            else if (p - NegativeRecallLikelihood < PositiveRecallLikelihood && _PosEpisodicMemory.Count > 0)
-            {
-                l = _PosEpisodicMemory;
-            }
-            return l;
+            return Choose(Ran.Ran.NextDouble(), _NegEpisodicMemory, _PosEpisodicMemory, _FullEpisodicMemory);
         }
         protected virtual List<QEpisodicMemoryCell<T, RT>> EpisodicSlice(List<QEpisodicMemoryCell<T, RT>> l, int count = 0)
         {

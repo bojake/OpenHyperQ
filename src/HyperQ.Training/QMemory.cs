@@ -41,6 +41,33 @@ namespace HyperQ.Training
             // Do nothing
         }
 
+        /// <summary>
+        /// When true, episodes are replayed from their last step back to their first: by <see cref="ReplayEpisode"/>
+        /// (the trainers' Obsess) and by the episodic memories' Playback. One backward pass carries an episode's
+        /// outcome back along every step that led to it; a forward pass moves it back one step. Off by default.
+        /// It does not affect the transition memories' Playback, whose draws are random.
+        /// </summary>
+        public bool ReplayBackward { get; set; } = false;
+
+        /// <summary>Returns the cells in replay order: as remembered, or last first when <see cref="ReplayBackward"/> is set.</summary>
+        protected IEnumerable<QMemoryCell<T,RT>> InReplayOrder(IList<QMemoryCell<T,RT>> cells)
+        {
+            if (ReplayBackward)
+            {
+                for (int i = cells.Count - 1; i >= 0; i--)
+                {
+                    yield return cells[i];
+                }
+            }
+            else
+            {
+                for (int i = 0; i < cells.Count; i++)
+                {
+                    yield return cells[i];
+                }
+            }
+        }
+
         public virtual int Capacity
         {
             get
@@ -58,12 +85,13 @@ namespace HyperQ.Training
         }
 
         /// <summary>
-        /// Replays the steps remembered since the last <see cref="StartEpisode"/>, in order: after
-        /// <see cref="EndEpisode"/>, the episode that just ended; during an episode, the episode so far.
+        /// Replays the steps remembered since the last <see cref="StartEpisode"/>, in order (last first when
+        /// <see cref="ReplayBackward"/> is set): after <see cref="EndEpisode"/>, the episode that just ended; during an
+        /// episode, the episode so far.
         /// </summary>
         public virtual void ReplayEpisode(HyperParams hp, Func<QMemoryCell<T,RT>, HyperParams, bool> callback)
         {
-            foreach (QMemoryCell<T,RT> mem in _Episode)
+            foreach (QMemoryCell<T,RT> mem in InReplayOrder(_Episode))
             {
                 callback(mem, hp);
             }

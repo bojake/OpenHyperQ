@@ -34,6 +34,48 @@ namespace HyperQ.Training
         }
     }
 
+    /// <summary>Replay helpers shared by the episodic memories.</summary>
+    internal static class EpisodicReplay
+    {
+        /// <summary>
+        /// Replays whole episodes until steps steps have been replayed, cutting the last one short. Each episode is
+        /// drawn at random from the memory that chooseMemory returns for that draw, and its cells are replayed in the
+        /// order inReplayOrder gives. A draw that finds nothing to replay is a miss, and steps misses in a row end
+        /// the replay, so memories that hold only empty episodes cannot stall it.
+        /// </summary>
+        internal static void PlaySteps<T, RT>(int steps, Func<List<QEpisodicMemoryCell<T, RT>>> chooseMemory,
+            Func<IList<QMemoryCell<T, RT>>, IEnumerable<QMemoryCell<T, RT>>> inReplayOrder, QRandom ran, HyperParams hp,
+            Func<QMemoryCell<T, RT>, HyperParams, bool> callback) where RT : IReward
+        {
+            int replayed = 0;
+            int misses = 0;
+            while (replayed < steps && misses < steps)
+            {
+                List<QEpisodicMemoryCell<T, RT>> l = chooseMemory();
+                if (l == null || l.Count == 0)
+                {
+                    misses++;
+                    continue;
+                }
+                QEpisodicMemoryCell<T, RT> episode = l[ran.Ran.Next(0, l.Count)];
+                if (episode.Memory.Count == 0)
+                {
+                    misses++;
+                    continue;
+                }
+                misses = 0;
+                foreach (QMemoryCell<T, RT> cell in inReplayOrder(episode.Memory))
+                {
+                    replayed++;
+                    if (!callback(cell, hp) || replayed == steps)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     [Serializable]
     public class QEpisodicMemory<T, RT> : QMemory<T, RT> where RT : IReward
     {
@@ -43,6 +85,14 @@ namespace HyperQ.Training
         public QEpisodicMemory(int maxSize, QRandom ran) : base(maxSize, ran: ran)
         {
         }
+
+        /// <summary>
+        /// When true, Playback's count is the number of steps to replay rather than a slice of episodes: whole
+        /// episodes are drawn at random and replayed, last step first when <see cref="QMemory{T,RT}.ReplayBackward"/>
+        /// is set, until count steps have been replayed, the last episode cut short. A replay budget then means the
+        /// same for episodic and transition memories. Off by default.
+        /// </summary>
+        public bool CountSteps { get; set; } = false;
 
         public override void StartEpisode()
         {
@@ -73,7 +123,7 @@ namespace HyperQ.Training
             {
                 return;
             }
-            foreach (QMemoryCell<T,RT> mem in _EpisodicMemory[_EpisodicMemory.Count - 1].Memory)
+            foreach (QMemoryCell<T,RT> mem in InReplayOrder(_EpisodicMemory[_EpisodicMemory.Count - 1].Memory))
             {
                 callback(mem, hp);
             }
@@ -81,6 +131,11 @@ namespace HyperQ.Training
 
         public override bool Playback(int count, HyperParams hp, Func<QMemoryCell<T,RT>, HyperParams, bool> callback)
         {
+            if (CountSteps)
+            {
+                EpisodicReplay.PlaySteps(count, SelectMemory, InReplayOrder, _random, hp, callback);
+                return true;
+            }
             List<QEpisodicMemoryCell<T,RT>> qMemoryCells = EpisodicSlice(SelectMemory(), count);
             if (qMemoryCells == null)
             {
@@ -90,7 +145,7 @@ namespace HyperQ.Training
             {
                 int ix = _random.Ran.Next(0, qMemoryCells.Count);
                 QEpisodicMemoryCell<T,RT> episode = qMemoryCells[ix];
-                foreach (QMemoryCell<T,RT> cell in episode.Memory)
+                foreach (QMemoryCell<T,RT> cell in InReplayOrder(episode.Memory))
                     if (!callback(cell, hp))
                     {
                         break;

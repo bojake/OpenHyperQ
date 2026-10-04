@@ -115,6 +115,13 @@ Available memory types include:
 
 These are sibling types with no conversions between them. A variable that may hold any of them is declared as the shared base type, `QMemory<T, ScalarReward>`, which is also what `EnableMemory` takes.
 
+The negative/positive memories have two opt-in settings, both off by default:
+
+- `KeepExtremes`: each sorted memory keeps its most extreme entries, the most negative and the most positive, and a full one drops its mildest entry. By default a full memory drops its most extreme or its mildest entry with even odds (`CullLIFOLikelihood`), so over time both settle around their median reward.
+- `ChooseListPerDraw`: `Playback` chooses the negative, positive or recent memory for each draw instead of once per call.
+
+Every memory has `ReplayBackward`, which replays episodes last step first, in `Obsess` and in the episodic memories' replay, so one pass carries an outcome back along the whole episode. The episodic memories have `CountSteps`, which makes `Reminisce`'s count a number of steps rather than episodes.
+
 The trainer also supports `Obsess(...)`, which replays the most recent episode (the steps remembered since the memory's `StartEpisode`) from any of these memory types.
 
 ## Dyna
