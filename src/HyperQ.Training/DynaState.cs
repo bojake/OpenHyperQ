@@ -50,9 +50,11 @@ namespace HyperQ.Training
         private readonly Dictionary<IDynaEntry, Dictionary<T, double>> _T = new Dictionary<IDynaEntry, Dictionary<T, double>>();
 
         /// <summary>
-        /// Cached max of T[de]. Tuple is (state, probability)
+        /// Cached argmax of Tc[de]: (state, count), the most frequent next state so far (the first to reach that count
+        /// among equals). It used to keep (state, probability) and compare a new probability with the cached one,
+        /// which never shrank: the first next state seen had probability 1, so the model stayed on it for good.
         /// </summary>
-        private readonly Dictionary<IDynaEntry, Tuple<T, double>> _Tmax = new Dictionary<IDynaEntry, Tuple<T, double>>();
+        private readonly Dictionary<IDynaEntry, Tuple<T, int>> _Tmax = new Dictionary<IDynaEntry, Tuple<T, int>>();
 
         /// <summary>
         /// (s,a) = reward model (RT)
@@ -235,10 +237,10 @@ namespace HyperQ.Training
             if (_Tmax.TryGetValue(de, out var cached))
                 return new Tuple<T, RT>(cached.Item1, r);
 
-            // Find argmax probability
-            var best = sT.Aggregate((a, b) => a.Value >= b.Value ? a : b);
+            // Find the most frequent next state
+            var best = _Tc[de].Aggregate((a, b) => a.Value >= b.Value ? a : b);
             var ret = new Tuple<T, RT>(best.Key, r);
-            _Tmax[de] = new Tuple<T, double>(best.Key, best.Value);
+            _Tmax[de] = new Tuple<T, int>(best.Key, best.Value);
 
             return ret;
         }
@@ -299,12 +301,15 @@ namespace HyperQ.Training
             _Tc[de][sprime] += 1;
             _TcSum[de] += 1;
 
-            double p = (double)_Tc[de][sprime] / _TcSum[de];
-            _T[de][sprime] = p;
+            // Every next state's probability changes with the total, not just this one's.
+            Dictionary<T, double> probabilities = _T[de];
+            foreach (KeyValuePair<T, int> kv in _Tc[de])
+                probabilities[kv.Key] = (double)kv.Value / _TcSum[de];
 
-            // Update cached max
-            if (!_Tmax.TryGetValue(de, out var mx) || p > mx.Item2)
-                _Tmax[de] = new Tuple<T, double>(sprime, p);
+            // Update the cached most frequent next state: counts only grow, so compare counts.
+            int count = _Tc[de][sprime];
+            if (!_Tmax.TryGetValue(de, out var mx) || count > mx.Item2)
+                _Tmax[de] = new Tuple<T, int>(sprime, count);
 
             // Maintain predecessor reverse map: sprime ← (s, a)
             if (!_Predecessors.TryGetValue(sprime, out var preds))
