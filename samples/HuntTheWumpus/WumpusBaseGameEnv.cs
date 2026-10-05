@@ -21,9 +21,10 @@ namespace HuntTheWumpus
         Model2,
         Model3,
         /// <summary>
-        /// Model1 with a constant penalty for an invalid move: -1, or -5 next to the gold. Models 1 to 3 divide that
-        /// penalty by the share of food eaten, which makes it -64 (-320 next to the gold) at the start of an episode,
-        /// far beyond dying (-10) or winning (+120).
+        /// Model1, kept under its own name for settings that use it. It was Model1 with a constant invalid-move penalty
+        /// while Models 1 to 3 divided that penalty by the share of food eaten (-64 at the start of an episode, -320 next
+        /// to the gold, against -10 for dying and +120 for winning). The division has since been removed from all of
+        /// them, so every model now charges -1 for an invalid move, or -5 next to the gold.
         /// </summary>
         Model4
     }
@@ -221,7 +222,7 @@ namespace HuntTheWumpus
         /// </summary>
         /// <param name="action"></param>
         /// <returns></returns>
-        private Tuple<double, bool> Model1Step(QAction[] action, bool divideByHunger = true)
+        private Tuple<double, bool> Model1Step(QAction[] action)
         {
             if (_Start == null)
             {
@@ -311,16 +312,12 @@ namespace HuntTheWumpus
                 if(!Quiet)
                     Console.WriteLine("INVALID MOVE");
                 reward = -1.0;
-                double food_pct = 1.0 - (double)_Food / (double)FOODMAX;
-
                 if (_Gold == 0 && dg1 < 2)
                 {
                     if (!Quiet)
                         Console.WriteLine("INVALID MOVE NEAR GOLD, PENALTY!");
                     reward = -5.0;
                 }
-                if(divideByHunger && food_pct > 0.0)
-                    reward = reward / food_pct;
             }
             if (!Quiet)
             {
@@ -434,16 +431,12 @@ namespace HuntTheWumpus
                 if (!Quiet)
                     Console.WriteLine("INVALID MOVE");
                 reward = -1.0;
-                double food_pct = 1.0 - (double)_Food / (double)FOODMAX;
-
                 if (_Gold == 0 && dg1 < 2)
                 {
                     if (!Quiet)
                         Console.WriteLine("INVALID MOVE NEAR GOLD, PENALTY!");
                     reward = -5.0;
                 }
-                if (food_pct > 0.0)
-                    reward = reward / food_pct;
             }
             if (!Quiet)
             {
@@ -546,16 +539,12 @@ namespace HuntTheWumpus
                 if (!Quiet)
                     Console.WriteLine("INVALID MOVE");
                 reward = -1.0;
-                double food_pct = 1.0 - (double)_Food / (double)FOODMAX;
-
                 if (_Gold == 0 && dg1 < 2)
                 {
                     if (!Quiet)
                         Console.WriteLine("INVALID MOVE NEAR GOLD, PENALTY!");
                     reward = -5.0;
                 }
-                if (food_pct > 0.0)
-                    reward = reward / food_pct;
             }
             if (!Quiet)
             {
@@ -582,7 +571,7 @@ namespace HuntTheWumpus
                 case RewardModelType.Model1: r= Model1Step(action); break;
                 case RewardModelType.Model2: r= Model2Step(action);break;
                 case RewardModelType.Model3: r = Model3Step(action); break;
-                case RewardModelType.Model4: r = Model1Step(action, divideByHunger: false); break;
+                case RewardModelType.Model4: r = Model1Step(action); break;
                 default:
                     throw new NotImplementedException();
             }
