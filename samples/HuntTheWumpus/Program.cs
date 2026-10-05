@@ -30,7 +30,15 @@ namespace HuntTheWumpus
         public bool layer = false;
         public int warmup_episodes = 0;
         public int memory_size = 500;
-        public int dyna_size = 200;
+        /// <summary>
+        /// Dyna's model: -1 (dyna_size=full, the default) keeps every (s,a), N > 0 keeps the latest N, 0 turns Dyna off.
+        /// In a HuntTheWumpus Dyna study over 20 caves, a full model did better than a small one of recent pairs.
+        /// </summary>
+        public int dyna_size = -1;
+        private static int ParseDynaSize(string v)
+        {
+            return v == "full" ? -1 : int.Parse(v);
+        }
         public int dyna_iters = 500;
         public double dyna_freq = 0.2;
         public bool use_negpos_memory = false;
@@ -175,12 +183,12 @@ namespace HuntTheWumpus
                 else if (cmdline[i].StartsWith("dyna="))
                 {
                     string[] s = cmdline[i].Substring(idx + 1).Split(',');
-                    dyna_size = int.Parse(s[0]);
+                    dyna_size = ParseDynaSize(s[0]);
                     dyna_iters = int.Parse(s[1]);
                 }
                 else if (cmdline[i].StartsWith("dyna_size="))
                 {
-                    dyna_size = int.Parse(cmdline[i].Substring(idx + 1));
+                    dyna_size = ParseDynaSize(cmdline[i].Substring(idx + 1));
                 }
                 else if (cmdline[i].StartsWith("dyna_iters="))
                 {
@@ -237,7 +245,7 @@ namespace HuntTheWumpus
                 Console.WriteLine("LAYERED HYPER enabled");
             if (use_negpos_memory)
                 Console.WriteLine("NEGPOS memory enabled");
-            Console.WriteLine("Dyna enabled {0}", dyna_size);
+            Console.WriteLine("Dyna enabled {0}", dyna_size < 0 ? "full model" : dyna_size.ToString());
             Console.WriteLine("Dyna freq {0}", dyna_freq);
             Console.WriteLine("Memory enabled {0} {1}", memory_size, episodic ? "EPISODIC" : "");
             Console.WriteLine("warmups enabled {0}", warmup_episodes);

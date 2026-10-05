@@ -355,7 +355,7 @@ namespace HuntTheWumpus
                     Console.WriteLine("  output step = {0}", args.epStep);
                     Console.WriteLine("  warmup = {0}", args.warmup_episodes);
                     Console.WriteLine("  memory = {0} {1}", args.memory_size, args.use_negpos_memory ? "neg/pos" : "all");
-                    Console.WriteLine("  dyna = {0} @ {1:F3}", args.dyna_size, args.dyna_freq);
+                    Console.WriteLine("  dyna = {0} @ {1:F3}", args.dyna_size < 0 ? "full" : args.dyna_size.ToString(), args.dyna_freq);
                     if (World == null)
                     {
                         World = CreateWorld();
@@ -454,8 +454,8 @@ namespace HuntTheWumpus
                         }
                         s.EnableMemory(mem);
                     }
-                    if (args.dyna_size > 0)
-                        s.EnableDyna(new DynaState<T, ScalarReward>(args.dyna_iters, args.dyna_size), args.dyna_freq);
+                    if (args.dyna_size != 0)
+                        s.EnableDyna(new DynaState<T, ScalarReward>(args.dyna_iters, Math.Max(0, args.dyna_size)), args.dyna_freq);
                     HyperParams hp = new HyperParams(Hypers);
                     s.InTraining = true;
                     if (args.warmup_episodes > 0)
