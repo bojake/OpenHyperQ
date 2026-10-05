@@ -19,7 +19,13 @@ namespace HuntTheWumpus
     {
         Model1,
         Model2,
-        Model3
+        Model3,
+        /// <summary>
+        /// Model1 with a constant penalty for an invalid move: -1, or -5 next to the gold. Models 1 to 3 divide that
+        /// penalty by the share of food eaten, which makes it -64 (-320 next to the gold) at the start of an episode,
+        /// far beyond dying (-10) or winning (+120).
+        /// </summary>
+        Model4
     }
     public class WumpusGameStatus : Tuple<int, int, int, int, PlayerStatus, CaveItem[],int>
     {
@@ -67,6 +73,11 @@ namespace HuntTheWumpus
         public bool Quiet { get; set; } = false;
 
         public EnvMetrics Metrics { get; set; }
+        /// <summary>
+        /// Whether the state includes the food level. An episode is capped at 500 steps and food lasts 640, so the food
+        /// level mostly splits each cell into dozens of states; option nofood leaves it out.
+        /// </summary>
+        public bool IncludeFood { get; set; } = true;
         /// <summary>
         /// Dimensions of the arena, (rows,columns)
         /// </summary>
@@ -210,7 +221,7 @@ namespace HuntTheWumpus
         /// </summary>
         /// <param name="action"></param>
         /// <returns></returns>
-        private Tuple<double, bool> Model1Step(QAction[] action)
+        private Tuple<double, bool> Model1Step(QAction[] action, bool divideByHunger = true)
         {
             if (_Start == null)
             {
@@ -308,7 +319,7 @@ namespace HuntTheWumpus
                         Console.WriteLine("INVALID MOVE NEAR GOLD, PENALTY!");
                     reward = -5.0;
                 }
-                if(food_pct > 0.0)
+                if(divideByHunger && food_pct > 0.0)
                     reward = reward / food_pct;
             }
             if (!Quiet)
@@ -571,6 +582,7 @@ namespace HuntTheWumpus
                 case RewardModelType.Model1: r= Model1Step(action); break;
                 case RewardModelType.Model2: r= Model2Step(action);break;
                 case RewardModelType.Model3: r = Model3Step(action); break;
+                case RewardModelType.Model4: r = Model1Step(action, divideByHunger: false); break;
                 default:
                     throw new NotImplementedException();
             }

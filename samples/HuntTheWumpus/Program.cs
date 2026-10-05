@@ -52,6 +52,8 @@ namespace HuntTheWumpus
         public bool seedSet = false;
         /// <summary>Skip the Q-matrix CSV written for every mind at every evaluation epoch.</summary>
         public bool nomatrix = false;
+        /// <summary>Leave the food level out of the state.</summary>
+        public bool nofood = false;
         public int max_training_steps = 500;
         public QParam g = new QParamExponential(0.997, 1.0, 0.997);
         public QParam e = new QParamExponential(0.5, 0.999991, 0.05);
@@ -141,6 +143,14 @@ namespace HuntTheWumpus
                 else if (cmdline[i] == "softmax+kl")
                 {
                     actionModel = ActionSelectionModel.SoftMax_KL;
+                }
+                else if (cmdline[i] == "model4")
+                {
+                    model = RewardModelType.Model4;
+                }
+                else if (cmdline[i] == "nofood")
+                {
+                    nofood = true;
                 }
                 else if (cmdline[i] == "nomatrix")
                 {

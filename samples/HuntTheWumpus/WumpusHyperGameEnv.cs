@@ -24,7 +24,10 @@ namespace HuntTheWumpus
             }
             s.Push(rpt.Location);
             s.Push(rpt.Gold);
-            s.Push(rpt.FoodLevel);
+            if (IncludeFood)
+            {
+                s.Push(rpt.FoodLevel);
+            }
             return s;
         }
     }

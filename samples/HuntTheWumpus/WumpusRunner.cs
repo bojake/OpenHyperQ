@@ -360,6 +360,7 @@ namespace HuntTheWumpus
                     {
                         World = CreateWorld();
                         World.RewardModel = args.model;
+                        World.IncludeFood = !args.nofood;
                         World.Dimensions = args.Dimensions;
                         World.Reset();
                         Console.WriteLine("Created the simulation world.");
