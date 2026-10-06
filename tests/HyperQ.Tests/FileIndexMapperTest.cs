@@ -13,7 +13,7 @@ namespace HyperQ.Test
     {
         private IIndexMapper<int> MakeIntTestMapper(int cacheSize=5,int flushAfter=2)
         {
-            string baseDir = Path.Combine(Path.GetTempPath(), "IntFileIndexMapperTest" + Guid.NewGuid().ToString());
+            string baseDir = TestTempFiles.NewDirectory("IntFileIndexMapperTest");
             Directory.CreateDirectory(baseDir);
             string basePath = Path.Combine(baseDir, "map");
             var mapper = new FileIndexMapper<int>(basePath, cacheSize, flushAfter);
@@ -22,7 +22,7 @@ namespace HyperQ.Test
         }
         private IIndexMapper<decimal> MakeDecimalTestMapper(int cacheSize = 5, int flushAfter = 2)
         {
-            string baseDir = Path.Combine(Path.GetTempPath(), "DecFileIndexMapperTest" + Guid.NewGuid().ToString());
+            string baseDir = TestTempFiles.NewDirectory("DecFileIndexMapperTest");
             Directory.CreateDirectory(baseDir);
             string basePath = Path.Combine(baseDir, "map");
             var mapper = new FileIndexMapper<decimal>(basePath, cacheSize, flushAfter);

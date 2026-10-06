@@ -12,7 +12,7 @@ namespace HyperQ.Test
     {
         private string MakeTempDir()
         {
-            string baseDir = Path.Combine(Path.GetTempPath(), "MMFTest" + Guid.NewGuid().ToString());
+            string baseDir = TestTempFiles.NewDirectory("MMFTest");
             Directory.CreateDirectory(baseDir);
             return baseDir;
         }
@@ -20,7 +20,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void FactoryReturnsSameInstanceForSamePath()
         {
-            string baseDir = Path.Combine(Path.GetTempPath(), "MMFTest" + Guid.NewGuid().ToString());
+            string baseDir = TestTempFiles.NewDirectory("MMFTest");
             Directory.CreateDirectory(baseDir);
             string basePath = Path.Combine(baseDir, "map");
 

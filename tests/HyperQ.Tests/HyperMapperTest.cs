@@ -90,7 +90,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void FBTestSingleLevelMapping()
         {
-            string baseDir = Path.Combine(Path.GetTempPath(), "FBTestSingleLevelMapping" + Guid.NewGuid().ToString());
+            string baseDir = Path.Combine(TestTempFiles.NewDirectory("FBTestSingleLevelMapping"), "map");
             FileBackedHyperMapper<decimal> f = new FileBackedHyperMapper<decimal>(memoryFileName:baseDir);
             decimal[] values = new decimal[] { 1M, 2M, 5M, 600M, 23423M, 1000M, 0M, -59M };
             uint[] indices = new uint[values.Length];
@@ -142,7 +142,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void FBTestTwoLevelMapping()
         {
-            string baseDir = Path.Combine(Path.GetTempPath(), "FBTestTwoLevelMapping" + Guid.NewGuid().ToString());
+            string baseDir = Path.Combine(TestTempFiles.NewDirectory("FBTestTwoLevelMapping"), "map");
             FileBackedHyperMapper<decimal> f = new FileBackedHyperMapper<decimal>(memoryFileName:baseDir);
             decimal[] values = new decimal[] { 1M, 2M, 5M, 600M, 23423M, 1000M, 0M, -59M };
             List<QState<decimal>> testv = new List<QState<decimal>>();
@@ -211,7 +211,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void FBTestFiveLevelMapping()
         {
-            string baseDir = Path.Combine(Path.GetTempPath(), "FBTestFiveLevelMapping" + Guid.NewGuid().ToString());
+            string baseDir = Path.Combine(TestTempFiles.NewDirectory("FBTestFiveLevelMapping"), "map");
             FileBackedHyperMapper<decimal> f = new FileBackedHyperMapper<decimal>(memoryFileName: baseDir);
             decimal[] values = new decimal[] { 1M, 2M, 5M, 600M, 23423M, 1000M, 0M, -59M };
             List<QState<decimal>> testv = new List<QState<decimal>>();
@@ -248,7 +248,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void FBTestVariableLevelMapping()
         {
-            string baseDir = Path.Combine(Path.GetTempPath(), "FBTestVariableLevelMapping" + Guid.NewGuid().ToString());
+            string baseDir = Path.Combine(TestTempFiles.NewDirectory("FBTestVariableLevelMapping"), "map");
             FileBackedHyperMapper<decimal> f = new FileBackedHyperMapper<decimal>(memoryFileName: baseDir);
             decimal[] values = new decimal[] { 1M, 2M, 5M, 600M, 23423M, 1000M, 0M, -59M };
             List<QState<decimal>> testv = new List<QState<decimal>>();
@@ -382,7 +382,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void FBTestExhaustiveFiveLevelMapping()
         {
-            string baseDir = Path.Combine(Path.GetTempPath(), "FBExhaustiveTestFiveLevelMapping" + Guid.NewGuid().ToString());
+            string baseDir = Path.Combine(TestTempFiles.NewDirectory("FBExhaustiveTestFiveLevelMapping"), "map");
             FileBackedHyperMapper<decimal> f = new FileBackedHyperMapper<decimal>(memoryFileName: baseDir);
             List<decimal> d = new List<decimal>();
             QRandom ran = new QRandom(0);
@@ -459,7 +459,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void FBTestRemovePathPreservesSiblingBranch()
         {
-            string baseDir = Path.Combine(Path.GetTempPath(), "FBRemovePathPreservesSiblingBranch" + Guid.NewGuid().ToString());
+            string baseDir = Path.Combine(TestTempFiles.NewDirectory("FBRemovePathPreservesSiblingBranch"), "map");
             FileBackedHyperMapper<decimal> f = new FileBackedHyperMapper<decimal>(memoryFileName: baseDir);
             QState<decimal> a = new QState<decimal>(new decimal[] { 1M, 2M, 3M });
             QState<decimal> b = new QState<decimal>(new decimal[] { 1M, 2M, 4M });

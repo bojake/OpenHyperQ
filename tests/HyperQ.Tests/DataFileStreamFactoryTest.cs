@@ -11,7 +11,7 @@ namespace HyperQ.Test
     {
         private static string MakeTempPath()
         {
-            string baseDir = Path.Combine(Path.GetTempPath(), "DataStreamFactoryTest" + Guid.NewGuid().ToString());
+            string baseDir = TestTempFiles.NewDirectory("DataStreamFactoryTest");
             Directory.CreateDirectory(baseDir);
             return Path.Combine(baseDir, "map.dat");
         }
@@ -19,7 +19,7 @@ namespace HyperQ.Test
         [TestMethod]
         public void FactoryReturnsSameStreamForSamePath()
         {
-            string baseDir = Path.Combine(Path.GetTempPath(), "DataStreamFactoryTest" + Guid.NewGuid().ToString());
+            string baseDir = TestTempFiles.NewDirectory("DataStreamFactoryTest");
             Directory.CreateDirectory(baseDir);
             string basePath = Path.Combine(baseDir, "map");
 
