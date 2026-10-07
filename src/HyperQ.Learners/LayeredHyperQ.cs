@@ -41,6 +41,8 @@ namespace HyperQ.Learners
             }
         }
         private List<IHyperQ<T>> _Layers = new List<IHyperQ<T>>();
+        /// <summary>The layers, coarsest first: layer i holds the prefixes of length i + 1. They are created as longer states arrive.</summary>
+        internal IReadOnlyList<IHyperQ<T>> LayerList { get { return _Layers; } }
         private Func<IHyperQ<T>> _Generator = null;
         private bool _GlobalQuery = false;
         /// <summary>
