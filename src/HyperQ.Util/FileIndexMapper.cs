@@ -39,6 +39,10 @@ namespace HyperQ.Util
         private const int AccessRetryCount = 3;
         private const int AccessRetryDelayMs = 10;
         /// <summary>
+        /// Size of a new .idx file: 1,024 slots. The file doubles whenever a slot lands past its end.
+        /// </summary>
+        private const long InitialIndexCapacity = 8 * 1024;
+        /// <summary>
         /// Header written at the start of every .dat file. Reserving this
         /// space guarantees real key offsets are never zero, which lets slot
         /// discovery on disk distinguish "never written" from a live entry.
@@ -99,8 +103,7 @@ namespace HyperQ.Util
                 throw ex;
             }
             long len = new FileInfo(indexPath).Exists ? new FileInfo(indexPath).Length : 0;
-            long minCapacity = 8L * 1024L * 1024L; // enough room for ~1M index slots
-            long capacity = Math.Max(len == 0 ? 8 * 1024 : len, minCapacity);
+            long capacity = Math.Max(len, InitialIndexCapacity);
             try
             {
                 _indexMap = MemoryMappedFileFactory.Get(indexPath, capacity);
@@ -185,10 +188,7 @@ namespace HyperQ.Util
         private void WriteIndexOffset(uint index, long offset)
         {
             long position = (long)index * sizeof(long);
-            if (position >= _indexCapacity)
-            {
-                throw new IndexOutOfRangeException($"Index {index} exceeds index capacity {_indexCapacity / sizeof(long)}.");
-            }
+            EnsureIndexCapacity(position + sizeof(long));
             if (index >= _knownSlots)
             {
                 for (long i = _knownSlots; i < index; i++)
@@ -211,6 +211,30 @@ namespace HyperQ.Util
                 }
             }
             _indexAccessor.Write(position, offset);
+        }
+
+        /// <summary>
+        /// Doubles the .idx file until it holds <paramref name="needed"/> bytes. The indexes come from a repository
+        /// that other mappers may share, so a mapper's first slot can lie far past the start. Writers hold the write
+        /// lock, so no reader is using the view this replaces.
+        /// </summary>
+        private void EnsureIndexCapacity(long needed)
+        {
+            if (needed <= _indexCapacity)
+            {
+                return;
+            }
+            long capacity = _indexCapacity;
+            while (capacity < needed)
+            {
+                capacity *= 2;
+            }
+            MemoryMappedFile grown = MemoryMappedFileFactory.Get(_basePath + ".idx", capacity);
+            MemoryMappedViewAccessor old = _indexAccessor;
+            _indexAccessor = grown.CreateViewAccessor(0, capacity, MemoryMappedFileAccess.ReadWrite);
+            _indexMap = grown;
+            _indexCapacity = capacity;
+            old.Dispose();
         }
 
         private uint GetScanUpperBound()

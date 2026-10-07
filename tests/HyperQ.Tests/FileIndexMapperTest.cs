@@ -168,5 +168,44 @@ namespace HyperQ.Test
             Assert.AreEqual(777, mapper.FromIndex(idx), "Reverse lookup broke under concurrency");
         }
 
+        [TestMethod]
+        public void TestFileBackedIndexGrowsPastItsStart()
+        {
+            // A new index file holds 1,024 slots and doubles when a key lands past its end. A mapper's indexes come
+            // from a repository it may share, so they can jump far ahead. The file used to start at 8 MB and refuse
+            // any slot past 1,048,575.
+            string basePath = Path.Combine(TestTempFiles.NewDirectory("IntFileIndexMapperTest"), "map");
+            string indexPath = basePath + ".idx";
+            IndexRepo repo = new IndexRepo(0);
+            uint[] indexes = { 0, 3000, 200000, 1100000 };
+            using (var mapper = new FileIndexMapper<int>(basePath, cacheSize: 1, flushThreshold: 1, repo: repo))
+            {
+                for (int key = 0; key < indexes.Length; key++)
+                {
+                    repo.RestoreAt(indexes[key]);
+                    Assert.AreEqual(indexes[key], mapper.ToIndex(key));
+                    if (key == 0)
+                    {
+                        Assert.AreEqual(8 * 1024L, new FileInfo(indexPath).Length, "A new index file should start at 1,024 slots.");
+                    }
+                }
+                Assert.IsTrue(new FileInfo(indexPath).Length >= (indexes[indexes.Length - 1] + 1L) * sizeof(long), "Expected the index file to grow.");
+                for (int key = 0; key < indexes.Length; key++)
+                {
+                    Assert.AreEqual(indexes[key], mapper.ToIndex(key), $"Key {key} moved when the index file grew.");
+                    Assert.AreEqual(key, mapper.FromIndex(indexes[key]));
+                }
+            }
+            using (var reopened = new FileIndexMapper<int>(basePath, repo: new IndexRepo(0)))
+            {
+                Assert.AreEqual((uint)indexes.Length, reopened.MappingCount);
+                for (int key = 0; key < indexes.Length; key++)
+                {
+                    Assert.AreEqual(indexes[key], reopened.ToIndex(key), $"Key {key} moved after reopening.");
+                    Assert.AreEqual(key, reopened.FromIndex(indexes[key]));
+                }
+            }
+        }
+
     }
 }

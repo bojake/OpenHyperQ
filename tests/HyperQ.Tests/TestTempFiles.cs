@@ -14,7 +14,7 @@ namespace HyperQ.Test
     /// test run. The assembly cleanup releases the caches and deletes the root, and the assembly initialization removes
     /// roots that crashed or killed runs left behind.
     /// (These tests used to write straight into the temp directory and never clean up. Every node of a
-    /// FileBackedHyperMapper is an 8 MB file, and over five months the runs left about 2.5 TB.)
+    /// FileBackedHyperMapper was then an 8 MB file, and over five months the runs left about 2.5 TB.)
     /// </summary>
     [TestClass]
     public class TestTempFiles
